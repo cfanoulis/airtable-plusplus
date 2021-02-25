@@ -1,0 +1,3 @@
+class AirtableBase {
+    //TODO
+}
