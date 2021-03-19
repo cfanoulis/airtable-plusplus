@@ -1,5 +1,6 @@
 import Airtable from 'airtable';
 import type Base from 'airtable/lib/base';
+import type { QueryParams } from 'airtable/lib/query_params';
 import type AirtableRecord from 'airtable/lib/record';
 
 export interface AirtablePlusPlusOptions {
@@ -12,6 +13,11 @@ export interface AirtablePlusPlusOptions {
 	noRetryIfRateLimited?: boolean;
 }
 
+export interface AirtablePlusPlusRecord<FieldType> {
+	id: string;
+	fields: FieldType;
+	createdTime: string;
+}
 /**
  * Creates an Airtable api object. Additional parameters can be set to the global configuration
  * object each method uses on subsequent calls. The instance will default to environment
@@ -42,7 +48,7 @@ export interface AirtablePlusPlusOptions {
  * @param {string} [config.concurrency] - Sets concurrency for async iteration functions
  * @param {boolean} [config.complex] - Flag to return full Airtable record object with helper methods attached
  */
-class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknown>> {
+class AirtablePlusPlus<ObjectType extends Record<string, unknown>> {
 	public base: Base;
 	private config: AirtablePlusPlusOptions;
 	public constructor(config: AirtablePlusPlusOptions) {
@@ -74,7 +80,7 @@ class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknow
 		const { tableName } = this._mergeConfig(config ?? {});
 
 		const record = await this.base.table(tableName).create(data);
-		return record._rawJson;
+		return (record._rawJson as unknown) as AirtablePlusPlusRecord<ObjectType>;
 	}
 
 	/**
@@ -106,17 +112,17 @@ class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknow
 	 * @param {function} [config.transform] - Optional global transform function for reads
 	 * @returns {Promise} Array of record objects
 	 */
-	public async read(params: Record<string, unknown> | string, config: AirtablePlusPlusOptions | string) {
+	public async read(params: QueryParams | string, config: AirtablePlusPlusOptions | string) {
 		let { tableName } = this._mergeConfig(config);
 		if (typeof params === 'string') {
 			tableName = params;
 			params = {};
 		}
 
-		let data: ObjectType[] = [];
+		let data: AirtablePlusPlusRecord<ObjectType>[] = [];
 		await this.base
 			.table(tableName)
-			.select((params as Record<string, unknown>) || {})
+			.select(params)
 			.eachPage(
 				(records, next) => {
 					data = data.concat(records.map((el) => el._rawJson));
@@ -147,7 +153,7 @@ class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknow
 		const { tableName } = this._mergeConfig(config ?? {});
 
 		const record = await this.base.table(tableName).find(rowID);
-		return record._rawJson;
+		return (record._rawJson as unknown) as AirtablePlusPlusRecord<ObjectType>;
 	}
 
 	/**
@@ -167,11 +173,11 @@ class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknow
 	 * @param {function} [config.base] - Airtable sdk base instance
 	 * @returns {Promise} Array of record objects
 	 */
-	public async update(rowID: string, data: Partial<Omit<ObjectType, 'id'>>, config?: Partial<AirtablePlusPlusOptions>) {
+	public async update(rowID: string, data: Partial<ObjectType>, config?: Partial<AirtablePlusPlusOptions>) {
 		const { tableName } = this._mergeConfig(config ?? {});
 
 		const record = await this.base.table(tableName).update(rowID, data);
-		return record._rawJson;
+		return (record._rawJson as unknown) as AirtablePlusPlusRecord<ObjectType>;
 	}
 
 	/**
@@ -192,7 +198,7 @@ class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknow
 	 * @param {function} [config.transform] - Optional global transform function for reads
 	 * @returns {Promise} Array of record objects
 	 */
-	public async updateWhere(where: string, data: Partial<Omit<ObjectType, 'id'>>, config: Partial<AirtablePlusPlusOptions>) {
+	public async updateWhere(where: string, data: Partial<ObjectType>, config: Partial<AirtablePlusPlusOptions>) {
 		const cfg = this._mergeConfig(config ?? {});
 		const rows = await this.read({ filterByFormula: where }, cfg);
 
@@ -215,11 +221,11 @@ class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknow
 	 * @param {function} [config.base] - Airtable sdk base instance
 	 * @returns {Promise} Record object
 	 */
-	public async replace(rowID: string, data: Omit<ObjectType, 'id'>, config?: Partial<AirtablePlusPlusOptions>) {
+	public async replace(rowID: string, data: ObjectType, config?: Partial<AirtablePlusPlusOptions>) {
 		const { tableName } = this._mergeConfig(config ?? {});
 
 		const record = await this.base.table(tableName).replace(rowID, data);
-		return record._rawJson;
+		return (record._rawJson as unknown) as AirtablePlusPlusRecord<ObjectType>;
 	}
 
 	/**
@@ -240,7 +246,7 @@ class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknow
 	 * @param {function} [config.transform] - Optional global transform function for reads
 	 * @returns {Promise} Array of record objects
 	 */
-	public async replaceWhere(where: string, data: Omit<ObjectType, 'id'>, config: Partial<AirtablePlusPlusOptions>) {
+	public async replaceWhere(where: string, data: ObjectType, config: Partial<AirtablePlusPlusOptions>) {
 		const cfg = this._mergeConfig(config);
 		const rows = await this.read({ filterByFormula: where }, cfg);
 
@@ -292,7 +298,7 @@ class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknow
 	 */
 	public async deleteWhere(where: string, config?: Partial<AirtablePlusPlusOptions>) {
 		const cfg = this._mergeConfig(config ?? {});
-		const rows = (await this.read({ filterByFormula: where }, cfg)) as ObjectType[];
+		const rows = (await this.read({ filterByFormula: where }, cfg)) as AirtablePlusPlusRecord<ObjectType>[];
 
 		return rows.map((row) => {
 			return this.delete(row.id, cfg);
@@ -314,11 +320,14 @@ class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknow
 	 * @param {string} [config.baseID] - Airtable base id
 	 * @returns {Promise} Array of record objects
 	 */
-	public async upsert(key: string, data: Partial<Omit<ObjectType, 'id'>>, config?: Partial<AirtablePlusPlusOptions>) {
+	public async upsert(key: string, data: Partial<ObjectType>, config?: Partial<AirtablePlusPlusOptions>) {
 		if (!key || !data) throw new Error('Key and data are required, but not provided');
 		const cfg = this._mergeConfig(config ?? {});
 
-		const rows = (await this.read({ filterByFormula: `${this._formatColumnFilter(key)} = ${data[key]}` }, cfg)) as ObjectType[];
+		const rows = (await this.read(
+			{ filterByFormula: `${this._formatColumnFilter(key)} = ${data[key]}` },
+			cfg
+		)) as AirtablePlusPlusRecord<ObjectType>[];
 
 		return rows.length === 0 ? this.create(data, cfg) : rows.map((row) => this.update(row.id, data, cfg));
 	}
