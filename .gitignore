@@ -59,3 +59,6 @@ typings/
 
 # build output
 dist/
+
+# documentation output
+doc/

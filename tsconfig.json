@@ -11,7 +11,7 @@
 		"forceConsistentCasingInFileNames": true,
 		"importHelpers": true,
 		"importsNotUsedAsValues": "error",
-		"lib": ["esnext"],
+		"lib": ["ESNext", "DOM"],
 		"module": "commonJS",
 		"moduleResolution": "Node",
 		"newLine": "lf",
