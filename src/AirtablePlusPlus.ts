@@ -1,8 +1,16 @@
-import { AirtablePlusPlusOptions } from './Interfaces';
+import Airtable from 'airtable';
+import type Base from 'airtable/lib/base';
+import type AirtableRecord from 'airtable/lib/record';
 
-const AirtableLib = require('airtable');
-const camelcaseKeys = require('camelcase-keys');
-const pMap = require('p-map');
+export interface AirtablePlusPlusOptions {
+	apiKey: string;
+	baseID: string;
+	tableName: string;
+	camelCase?: boolean;
+	endpointUrl?: string;
+	requestTimeout?: number;
+	noRetryIfRateLimited?: boolean;
+}
 
 /**
  * Creates an Airtable api object. Additional parameters can be set to the global configuration
@@ -34,18 +42,15 @@ const pMap = require('p-map');
  * @param {string} [config.concurrency] - Sets concurrency for async iteration functions
  * @param {boolean} [config.complex] - Flag to return full Airtable record object with helper methods attached
  */
-class AirtablePlus {
-	config: AirtablePlusPlusOptions;
-	constructor(config) {
+class AirtablePlusPlus<ObjectType extends { id: string } & Record<string, unknown>> {
+	public base: Base;
+	private config: AirtablePlusPlusOptions;
+	public constructor(config: AirtablePlusPlusOptions) {
 		this.config = this._mergeConfig({
-			apiKey: process.env.AIRTABLE_API_KEY,
-			baseID: process.env.AIRTABLE_BASE_ID,
-			tableName: process.env.AIRTABLE_TABLE_NAME,
 			camelCase: false,
-			complex: false,
-			concurrency: 1,
 			...config
 		});
+		this.base = new Airtable({ apiKey: config.apiKey }).base(config.baseID)._base;
 	}
 
 	/**
@@ -64,12 +69,12 @@ class AirtablePlus {
 	 * @param {boolean} [config.complex] - Flag to return full Airtable record object with helper methods attached
 	 * @returns {Promise} Created Record Object
 	 */
-	async create(data, config) {
-		if (!data) throw new Error('data object empty');
-		const { tableName, base, complex } = this._mergeConfig(config);
+	public async create(data: Partial<Omit<ObjectType, 'id'>>, config?: string | AirtablePlusPlusOptions) {
+		if (!data) throw new Error('No data provided');
+		const { tableName } = this._mergeConfig(config ?? {});
 
-		const record = await base(tableName).create(data);
-		return complex ? record : record._rawJson;
+		const record = await this.base.table(tableName).create(data);
+		return record._rawJson;
 	}
 
 	/**
@@ -101,30 +106,28 @@ class AirtablePlus {
 	 * @param {function} [config.transform] - Optional global transform function for reads
 	 * @returns {Promise} Array of record objects
 	 */
-	read(params, config) {
-		let { tableName, camelCase, complex, base } = this._mergeConfig(config);
+	public async read(params: Record<string, unknown> | string, config: AirtablePlusPlusOptions | string) {
+		let { tableName } = this._mergeConfig(config);
 		if (typeof params === 'string') {
 			tableName = params;
 			params = {};
 		}
 
-		return new Promise((resolve, reject) => {
-			let data = [];
-			base(tableName)
-				.select(params || {})
-				.eachPage(
-					(records, next) => {
-						data = data.concat(records.map((el) => (complex ? el : el._rawJson)));
-						next();
-					},
-					(err) => {
-						if (err) return reject(err);
-						if (camelCase) data = camelcaseKeys(data, { deep: true });
-
-						resolve(data.filter((rows) => !!rows));
-					}
-				);
-		});
+		let data: ObjectType[] = [];
+		await this.base
+			.table(tableName)
+			.select((params as Record<string, unknown>) || {})
+			.eachPage(
+				(records, next) => {
+					data = data.concat(records.map((el) => el._rawJson));
+					next();
+				},
+				(err) => {
+					if (err) throw err;
+					data = data.filter((rows) => Boolean(rows));
+				}
+			);
+		return data;
 	}
 
 	/**
@@ -140,11 +143,11 @@ class AirtablePlus {
 	 * @param {function} [config.base] - Airtable sdk base instance
 	 * @returns {Promise} Record object
 	 */
-	async find(rowID, config) {
-		const { tableName, complex, base } = this._mergeConfig(config);
+	public async find(rowID: string, config?: Partial<AirtablePlusPlusOptions>) {
+		const { tableName } = this._mergeConfig(config ?? {});
 
-		const record = await base(tableName).find(rowID);
-		return complex ? record : record._rawJson;
+		const record = await this.base.table(tableName).find(rowID);
+		return record._rawJson;
 	}
 
 	/**
@@ -164,11 +167,11 @@ class AirtablePlus {
 	 * @param {function} [config.base] - Airtable sdk base instance
 	 * @returns {Promise} Array of record objects
 	 */
-	async update(rowID, data, config) {
-		const { tableName, base, complex } = this._mergeConfig(config);
+	public async update(rowID: string, data: Partial<Omit<ObjectType, 'id'>>, config?: Partial<AirtablePlusPlusOptions>) {
+		const { tableName } = this._mergeConfig(config ?? {});
 
-		const record = await base(tableName).update(rowID, data);
-		return complex ? record : record._rawJson;
+		const record = await this.base.table(tableName).update(rowID, data);
+		return record._rawJson;
 	}
 
 	/**
@@ -189,17 +192,11 @@ class AirtablePlus {
 	 * @param {function} [config.transform] - Optional global transform function for reads
 	 * @returns {Promise} Array of record objects
 	 */
-	async updateWhere(where, data, config) {
-		const cfg = this._mergeConfig(config);
+	public async updateWhere(where: string, data: Partial<Omit<ObjectType, 'id'>>, config: Partial<AirtablePlusPlusOptions>) {
+		const cfg = this._mergeConfig(config ?? {});
 		const rows = await this.read({ filterByFormula: where }, cfg);
 
-		return pMap(
-			rows,
-			async (row) => {
-				return this.update(cfg.complex ? row.getId() : row.id, data, cfg);
-			},
-			{ concurrency: cfg.concurrency }
-		);
+		return rows.map((row) => this.update(row.id, data, cfg));
 	}
 
 	/**
@@ -218,11 +215,11 @@ class AirtablePlus {
 	 * @param {function} [config.base] - Airtable sdk base instance
 	 * @returns {Promise} Record object
 	 */
-	async replace(rowID, data, config) {
-		const { tableName, base, complex } = this._mergeConfig(config);
+	public async replace(rowID: string, data: Omit<ObjectType, 'id'>, config?: Partial<AirtablePlusPlusOptions>) {
+		const { tableName } = this._mergeConfig(config ?? {});
 
-		const record = await base(tableName).replace(rowID, data);
-		return complex ? record : record._rawJson;
+		const record = await this.base.table(tableName).replace(rowID, data);
+		return record._rawJson;
 	}
 
 	/**
@@ -243,17 +240,11 @@ class AirtablePlus {
 	 * @param {function} [config.transform] - Optional global transform function for reads
 	 * @returns {Promise} Array of record objects
 	 */
-	async replaceWhere(where, data, config) {
+	public async replaceWhere(where: string, data: Omit<ObjectType, 'id'>, config: Partial<AirtablePlusPlusOptions>) {
 		const cfg = this._mergeConfig(config);
 		const rows = await this.read({ filterByFormula: where }, cfg);
 
-		return pMap(
-			rows,
-			async (row) => {
-				return this.replace(cfg.complex ? row.getId() : row.id, data, cfg);
-			},
-			{ concurrency: cfg.concurrency }
-		);
+		return rows.map((row) => this.replace(row.id, data, cfg));
 	}
 
 	/**
@@ -270,18 +261,15 @@ class AirtablePlus {
 	 * @param {function} [config.base] - Airtable sdk base instance
 	 * @returns {Promise} Record object
 	 */
-	async delete(rowID, config) {
-		const { tableName, base, complex } = this._mergeConfig(config);
+	public async delete(rowID: string | string[], config?: Partial<AirtablePlusPlusOptions>) {
+		const { tableName } = this._mergeConfig(config ?? {});
 
-		const record = await base(tableName).destroy(rowID);
+		// even if its a single string, it will be fine.
+		const record: AirtableRecord | AirtableRecord[] = await this.base.table(tableName).destroy(rowID as string[]);
 
-		return complex
-			? record
-			: {
-					id: record.id,
-					fields: {},
-					createdTime: null
-			  };
+		return Array.isArray(record)
+			? record.map((rec) => ({ id: rec.id, fields: {}, createdTime: null }))
+			: { id: (record as AirtableRecord).id, fields: {}, createdTime: null };
 	}
 
 	/**
@@ -302,107 +290,13 @@ class AirtablePlus {
 	 * @param {function} [config.transform] - Optional global transform function for reads
 	 * @returns {Promise} Array of record objects
 	 */
-	async deleteWhere(where, config) {
-		const cfg = this._mergeConfig(config);
-		const rows = await this.read({ filterByFormula: where }, cfg);
+	public async deleteWhere(where: string, config?: Partial<AirtablePlusPlusOptions>) {
+		const cfg = this._mergeConfig(config ?? {});
+		const rows = (await this.read({ filterByFormula: where }, cfg)) as ObjectType[];
 
-		return pMap(
-			rows,
-			async (row) => {
-				return this.delete(cfg.complex ? row.getId() : row.id, cfg);
-			},
-			{ concurrency: cfg.concurrency }
-		);
-	}
-
-	/**
-	 * Truncates a table specified in the configuration object
-	 *
-	 * @example
-	 * const res = await inst.truncate();
-	 *
-	 * @param {Object} config - override configuration object
-	 * @param {string} [config.tableName] - Airtable table name
-	 * @returns {Promise} Array of record objects
-	 */
-	async truncate(config) {
-		const cfg = this._mergeConfig(config);
-		const rows = await this.read({}, cfg);
-		return Promise.all(rows.map((row) => this.delete(cfg.complex ? row.getId() : row.id, cfg)));
-	}
-
-	/**
-	 * Reads all the values from one table and appends to another table. Allows for
-	 * selective appending by sending optional fields and filters.
-	 *
-	 * @example
-	 * // complex usage in the same base
-	 * const res = await inst.appendTable('Read', 'Write');
-	 *
-	 * // allows for configuration of both source and dest
-	 * const res = await inst.appendTable({ tableName: 'Read', baseID: 'xxx' },  { tableName: 'Write' })
-	 *
-	 * @param {Object|string} source - if string, source represents source table name
-	 * @param {string} source.tableName - Source table name
-	 * @param {string} [source.baseID] - Source base id
-	 * @param {string} [source.fields] - What fields to copy over to destination table
-	 * @param {string} [source.where] - Filter passed in to conditionally copy
-	 * @param {Object|string} dest - if string, dest represents dest table name
-	 * @param {string} dest.tableName - Dest table name
-	 * @param {string} [dest.baseID] - Dest base id
-	 * @param {string} [dest.concurrency] - Dest concurrency when creating new values
-	 * @returns {Promise} Array of record objects
-	 */
-	async appendTable(sourceCfg, destCfg) {
-		if (typeof sourceCfg === 'string') sourceCfg = { tableName: sourceCfg };
-		if (typeof destCfg === 'string') destCfg = { tableName: destCfg };
-
-		let { concurrency = 1, ...dest } = destCfg;
-		destCfg = dest;
-
-		const rows = await this.read(
-			{
-				filterByFormula: sourceCfg.where || '',
-				fields: sourceCfg.fields || []
-			},
-			sourceCfg
-		);
-
-		return pMap(
-			rows,
-			async ({ fields }) => {
-				return this.create(fields, destCfg);
-			},
-			{ concurrency }
-		);
-	}
-
-	/**
-	 * Copies/Overwrites one table into another. The source table will have all rows deleted
-	 * prior to having the source rows inserted.
-	 *
-	 * @example
-	 * // complex usage in the same base
-	 * const res = await inst.overwriteTable('Read', 'Write');
-	 *
-	 * // allows for configuration of both source and dest
-	 * const res = await inst.overwriteTable({ tableName: 'Read', baseID: 'xxx' },  { tableName: 'Write' })
-	 *
-	 * @param {Object|string} source - if string, source represents source table name
-	 * @param {string} source.tableName - Source table name
-	 * @param {string} [source.baseID] - Source base id
-	 * @param {string} [source.fields] - What fields to copy over to destination table
-	 * @param {string} [source.where] - Filter passed in to conditionally copy
-	 * @param {Object|string} dest - if string, dest represents dest table name
-	 * @param {string} dest.tableName - Dest table name
-	 * @param {string} [dest.baseID] - Dest base id
-	 * @param {string} [dest.concurrency] - Dest concurrency when creating new values
-	 * @returns {Promise} Array of record objects
-	 */
-	async overwriteTable(sourceCfg, destCfg) {
-		if (typeof destCfg === 'string') destCfg = { tableName: destCfg };
-		await this.truncate(destCfg);
-		return this.appendTable(sourceCfg, destCfg);
+		return rows.map((row) => {
+			return this.delete(row.id, cfg);
+		});
 	}
 
 	/**
@@ -420,25 +314,13 @@ class AirtablePlus {
 	 * @param {string} [config.baseID] - Airtable base id
 	 * @returns {Promise} Array of record objects
 	 */
-	async upsert(key, data, config) {
-		if (!key || !data) throw new Error('please check passed parameters. key and data are required');
-		const cfg = this._mergeConfig(config);
+	public async upsert(key: string, data: Partial<Omit<ObjectType, 'id'>>, config?: Partial<AirtablePlusPlusOptions>) {
+		if (!key || !data) throw new Error('Key and data are required, but not provided');
+		const cfg = this._mergeConfig(config ?? {});
 
-		const rows = await this.read(
-			{
-				filterByFormula: `${this._formatColumnFilter(key)} = ${data[key]}`
-			},
-			cfg
-		);
-		if (rows.length === 0) return this.create(data, cfg);
+		const rows = (await this.read({ filterByFormula: `${this._formatColumnFilter(key)} = ${data[key]}` }, cfg)) as ObjectType[];
 
-		return pMap(
-			rows,
-			(row) => {
-				return this.update(cfg.complex ? row.getId() : row.id, data, cfg);
-			},
-			{ concurrency: cfg.concurrency }
-		);
+		return rows.length === 0 ? this.create(data, cfg) : rows.map((row) => this.update(row.id, data, cfg));
 	}
 
 	/**
@@ -450,24 +332,15 @@ class AirtablePlus {
 	 * @param {Object} config - override config object
 	 * @returns {Object} - local configuration object
 	 */
-	_mergeConfig(config: AirtablePlusPlusOptions) {
+	protected _mergeConfig(config: string | Partial<AirtablePlusPlusOptions>) {
 		if (!config) return this.config;
-		let override = {} as AirtablePlusPlusOptions;
+		let override = {} as Partial<AirtablePlusPlusOptions>;
 		if (typeof config === 'string') override.tableName = config;
-
 		if (typeof config === 'object') {
 			override = config;
 		}
 
-		let cfg = { ...this.config, ...override };
-
-		if (cfg.apiKey !== AirtableLib.apiKey) {
-			AirtableLib.apiKey = cfg.apiKey;
-			cfg.base = AirtableLib.base(cfg.baseID);
-		}
-
-		if (!cfg.base || cfg.baseID !== cfg.base.getId()) cfg.base = AirtableLib.base(cfg.baseID);
-
+		const cfg = { ...this.config, ...override };
 		return cfg;
 	}
 
@@ -481,10 +354,10 @@ class AirtablePlus {
 	 * @param {string} columnName - Airtable Column name being used in a filter
 	 * @returns {string} - formatted column name
 	 */
-	_formatColumnFilter(columnName = '') {
-		columnName = '' + columnName;
+	protected _formatColumnFilter(columnName = '') {
+		columnName = `${columnName}`;
 		return columnName.split(' ').length > 1 ? `{${columnName}}` : columnName;
 	}
 }
 
-module.exports = AirtablePlus;
+export default AirtablePlusPlus;
