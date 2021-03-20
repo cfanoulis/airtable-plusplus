@@ -2,5 +2,6 @@
 	"$schema": "https://typedoc.org/schema.json",
 	"out": "./doc",
 	"entryPoints": ["./src/AirtablePlusPlus.ts"],
-	"excludeProtected": true
+	"excludeProtected": true,
+	"theme": "./node_modules/typedoc-twilio-theme/bin/default"
 }

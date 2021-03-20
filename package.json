@@ -1,8 +1,8 @@
 {
-	"name": "@hackropolis/airtable-plusplus",
+	"name": "airtable-plusplus",
 	"version": "0.0.1",
 	"description": "A TypeScript fork of `airtable-plus`, the Airtable Node library designed for async/await.",
-	"main": "dist/AirtablePlusPlus.js",
+	"main": "./dist/AirtablePlusPlus.js",
 	"types": "./dist/AirtablePlusPlus.d.ts",
 	"directories": {
 		"lib": "dist"
@@ -11,6 +11,7 @@
 		"lint": "eslint src --ext .ts",
 		"format": "prettier --write src",
 		"build": "tsc",
+		"doc": "typedoc --options ./typedoc.json",
 		"release": "semantic-release"
 	},
 	"config": {
@@ -38,14 +39,15 @@
 		"Victor Hahn <vhahnwebdev@gmail.com>"
 	],
 	"license": "MIT",
+	"files": [
+		"dist"
+	],
 	"bugs": {
 		"url": "https://github.com/hackropolis/airtable-plusplus/issues"
 	},
 	"homepage": "https://github.com/hackropolis/airtable-plusplus#readme",
 	"dependencies": {
-		"airtable": "^0.10.1",
-		"camelcase-keys": "^6.2.2",
-		"p-map": "^4.0.0"
+		"airtable": "^0.10.1"
 	},
 	"devDependencies": {
 		"@commitlint/cli": "^12.0.0",
