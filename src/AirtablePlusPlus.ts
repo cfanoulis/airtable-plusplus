@@ -1,7 +1,7 @@
 import Airtable from 'airtable';
-import type Base from 'airtable/lib/base';
 import type { QueryParams } from 'airtable/lib/query_params';
 import type AirtableRecord from 'airtable/lib/record';
+import type Table from 'airtable/lib/table';
 
 /**
  * Module configuration object
@@ -52,8 +52,7 @@ export interface AirtablePlusPlusRecord<FieldType> {
  * @typeParam IFields - An interface to describe how your data is formatted.
  */
 class AirtablePlusPlus<IFields extends Record<string, unknown>> {
-	public base: Base;
-	private config: AirtablePlusPlusOptions;
+	public table: Table;
 	/**
 	 * Creates an AirtablePlusPlus instance, representing a table.
 	 * The configuration options you provide here may be overriden later
@@ -68,8 +67,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @param config - Configuration object
 	 */
 	public constructor(config: AirtablePlusPlusOptions) {
-		this.config = config;
-		this.base = new Airtable({ apiKey: config.apiKey }).base(config.baseId)._base;
+		this.table = new Airtable({ apiKey: config.apiKey }).base(config.baseId)(config.tableName);
 	}
 
 	/**
@@ -87,7 +85,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	public async create(data: Partial<IFields>) {
 		if (!data) throw new Error('No data provided');
 
-		const record = await this.base.table(this.config.tableName).create(data);
+		const record = await this.table.create(data);
 		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
 	}
 
@@ -106,8 +104,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 */
 	public async read(params?: QueryParams) {
 		let data: AirtablePlusPlusRecord<IFields>[] = [];
-		await this.base
-			.table(this.config.tableName)
+		await this.table
 			.select(params)
 			.eachPage((records, next) => {
 				data = data.concat(records.map((el) => el._rawJson));
@@ -129,7 +126,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @returns Record object
 	 */
 	public async find(rowID: string) {
-		const record = await this.base.table(this.config.tableName).find(rowID);
+		const record = await this.table.find(rowID);
 		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
 	}
 
@@ -147,7 +144,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @returns Array of record objects
 	 */
 	public async update(rowID: string, data: Partial<IFields>) {
-		const record = await this.base.table(this.config.tableName).update(rowID, data);
+		const record = await this.table.update(rowID, data);
 		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
 	}
 
@@ -180,7 +177,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @returns Record object
 	 */
 	public async replace(rowID: string, data: IFields) {
-		const record = await this.base.table(this.config.tableName).replace(rowID, data);
+		const record = await this.table.replace(rowID, data);
 		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
 	}
 
@@ -211,7 +208,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 */
 	public async delete(rowID: string | string[]) {
 		// even if its a single string, it will be fine.
-		const record: AirtableRecord | AirtableRecord[] = await this.base.table(this.config.tableName).destroy(rowID as string[]);
+		const record: AirtableRecord | AirtableRecord[] = await this.table.destroy(rowID as string[]);
 
 		return Array.isArray(record)
 			? record.map((rec) => ({ id: rec.id, fields: {}, createdTime: null }))
