@@ -14,7 +14,7 @@ export interface AirtablePlusPlusOptions {
 	/**
 	 * Your Airtable base ID. You can get that from https://airtable.com/api, and selecting the base you want to work with
 	 */
-	baseID: string;
+	baseId: string;
 	/**
 	 * The name fo the table you want to interact with. **Not the ID, the name**
 	 */
@@ -69,7 +69,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 */
 	public constructor(config: AirtablePlusPlusOptions) {
 		this.config = config;
-		this.base = new Airtable({ apiKey: config.apiKey }).base(config.baseID)._base;
+		this.base = new Airtable({ apiKey: config.apiKey }).base(config.baseId)._base;
 	}
 
 	/**
@@ -84,11 +84,10 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @param data - Create data object
 	 * @returns Created Record Object
 	 */
-	public async create(data: Partial<Omit<IFields, 'id'>>, config?: string | Partial<AirtablePlusPlusOptions>) {
+	public async create(data: Partial<IFields>) {
 		if (!data) throw new Error('No data provided');
-		const { tableName } = this._mergeConfig(config ?? {});
 
-		const record = await this.base.table(tableName).create(data);
+		const record = await this.base.table(this.config.tableName).create(data);
 		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
 	}
 
@@ -102,31 +101,21 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 *
 	 * @example const res = await inst.read({ maxRecords: 1 });
 	 *
-	 * @param params - If string: sets Airtable table name, If object: Airtable api parameters
-	 * @param config - Optional configuration override
+	 * @param params Airtable api parameters
 	 * @returns Array of record objects
 	 */
-	public async read(params?: QueryParams | string, config?: AirtablePlusPlusOptions | string) {
-		let { tableName } = this._mergeConfig(config ?? {});
-		if (typeof params === 'string') {
-			tableName = params;
-			params = {};
-		}
-
+	public async read(params?: QueryParams) {
 		let data: AirtablePlusPlusRecord<IFields>[] = [];
 		await this.base
-			.table(tableName)
+			.table(this.config.tableName)
 			.select(params)
-			.eachPage(
-				(records, next) => {
-					data = data.concat(records.map((el) => el._rawJson));
-					next();
-				},
-				(err) => {
-					if (err) throw err;
-					data = data.filter((rows) => Boolean(rows));
-				}
-			);
+			.eachPage((records, next) => {
+				data = data.concat(records.map((el) => el._rawJson));
+				next();
+			})
+			.catch((err) => {
+				throw err;
+			});
 		return data;
 	}
 
@@ -137,13 +126,10 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * const res = await inst.find('1234');
 	 *
 	 * @param rowID - Airtable Row ID to query data from
-	 * @param config - Optional config override
 	 * @returns Record object
 	 */
-	public async find(rowID: string, config?: Partial<AirtablePlusPlusOptions>) {
-		const { tableName } = this._mergeConfig(config ?? {});
-
-		const record = await this.base.table(tableName).find(rowID);
+	public async find(rowID: string) {
+		const record = await this.base.table(this.config.tableName).find(rowID);
 		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
 	}
 
@@ -158,13 +144,10 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 *
 	 * @param rowID - Airtable Row ID to update
 	 * @param data - row data with keys that you'd like to update
-	 * @param config - Optional config override
 	 * @returns Array of record objects
 	 */
-	public async update(rowID: string, data: Partial<IFields>, config?: Partial<AirtablePlusPlusOptions>) {
-		const { tableName } = this._mergeConfig(config ?? {});
-
-		const record = await this.base.table(tableName).update(rowID, data);
+	public async update(rowID: string, data: Partial<IFields>) {
+		const record = await this.base.table(this.config.tableName).update(rowID, data);
 		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
 	}
 
@@ -177,14 +160,11 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 *
 	 * @param  where - filterByFormula string to filter table data by
 	 * @param  data - Data to update if where condition is met
-	 * @param config - Optional configuration override
 	 * @returns Array of record objects
 	 */
-	public async updateWhere(where: string, data: Partial<IFields>, config: Partial<AirtablePlusPlusOptions>) {
-		const cfg = this._mergeConfig(config ?? {});
-		const rows = await this.read({ filterByFormula: where }, cfg);
-
-		return rows.map((row) => this.update(row.id, data, cfg));
+	public async updateWhere(where: string, data: Partial<IFields>) {
+		const rows = await this.read({ filterByFormula: where });
+		return rows.map((row) => this.update(row.id, data));
 	}
 
 	/**
@@ -197,13 +177,10 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 *
 	 * @param rowID - Airtable Row ID to replace
 	 * @param data - row data with keys that you'd like to replace
-	 * @param config - Optional config override
 	 * @returns Record object
 	 */
-	public async replace(rowID: string, data: IFields, config?: Partial<AirtablePlusPlusOptions>) {
-		const { tableName } = this._mergeConfig(config ?? {});
-
-		const record = await this.base.table(tableName).replace(rowID, data);
+	public async replace(rowID: string, data: IFields) {
+		const record = await this.base.table(this.config.tableName).replace(rowID, data);
 		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
 	}
 
@@ -216,14 +193,11 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 *
 	 * @param where - filterByFormula string to filter table data by
 	 * @param data - Data to replace if where condition is met
-	 * @param config - Optional configuration override
 	 * @returns Array of record objects
 	 */
-	public async replaceWhere(where: string, data: IFields, config: Partial<AirtablePlusPlusOptions>) {
-		const cfg = this._mergeConfig(config);
-		const rows = await this.read({ filterByFormula: where }, cfg);
-
-		return rows.map((row) => this.replace(row.id, data, cfg));
+	public async replaceWhere(where: string, data: IFields) {
+		const rows = await this.read({ filterByFormula: where });
+		return rows.map((row) => this.replace(row.id, data));
 	}
 
 	/**
@@ -233,18 +207,11 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * const res = await inst.delete('1234');
 	 *
 	 * @param rowID - Airtable Row ID to delete
-	 * @param {Object} data - row data with keys that you'd like to delete
-	 * @param {Object} [config] - Optional config override
-	 * @param {string} [config.tableName] - Airtable table name
-	 * @param {boolean} [config.complex] - Flag to return full Airtable record object with helper methods attached
-	 * @param {function} [config.base] - Airtable sdk base instance
-	 * @returns {Promise} Record object
+	 * @returns Record object
 	 */
-	public async delete(rowID: string | string[], config?: Partial<AirtablePlusPlusOptions>) {
-		const { tableName } = this._mergeConfig(config ?? {});
-
+	public async delete(rowID: string | string[]) {
 		// even if its a single string, it will be fine.
-		const record: AirtableRecord | AirtableRecord[] = await this.base.table(tableName).destroy(rowID as string[]);
+		const record: AirtableRecord | AirtableRecord[] = await this.base.table(this.config.tableName).destroy(rowID as string[]);
 
 		return Array.isArray(record)
 			? record.map((rec) => ({ id: rec.id, fields: {}, createdTime: null }))
@@ -258,23 +225,15 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @example
 	 * const res = await inst.deleteWhere('firstName = "foo"');
 	 *
-	 * @param {string} where - filterByFormula string to filter table data by
-	 * @param {Object} data - Data to delete if where condition is met
-	 * @param {Object} [config] - Optional configuration override
-	 * @param {string} [config.baseID] - Airtable base ID
-	 * @param {string} [config.tableName] - Airtable table name
-	 * @param {string} [config.camelCase] - Converts column name object keys to camel case in JSON response
-	 * @param {string} [config.concurrency] - Sets concurrency for async iteration functions
-	 * @param {boolean} [config.complex] - Flag to return full Airtable record object with helper methods attached
-	 * @param {function} [config.transform] - Optional global transform function for reads
+	 * @param where - filterByFormula string to filter table data by
+	 * @param data - Data to delete if where condition is met
 	 * @returns {Promise} Array of record objects
 	 */
-	public async deleteWhere(where: string, config?: Partial<AirtablePlusPlusOptions>) {
-		const cfg = this._mergeConfig(config ?? {});
-		const rows = (await this.read({ filterByFormula: where }, cfg)) as AirtablePlusPlusRecord<IFields>[];
+	public async deleteWhere(where: string) {
+		const rows = (await this.read({ filterByFormula: where })) as AirtablePlusPlusRecord<IFields>[];
 
 		return rows.map((row) => {
-			return this.delete(row.id, cfg);
+			return this.delete(row.id);
 		});
 	}
 
@@ -285,45 +244,16 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @example
 	 * const res = await inst.upsert('primarKeyID', data);
 	 *
-	 * @param {string} key - Primary key to compare value in passed in data object with dest row
-	 * @param {Object} data - Updated data
-	 * @param {Object} [config] - Optional config override
-	 * @param {string} [config.tableName] - Airtable table name
-	 * @param {boolean} [config.complex] - Flag to return full Airtable record object with helper methods attached
-	 * @param {string} [config.baseID] - Airtable base id
-	 * @returns {Promise} Array of record objects
+	 * @param key - Primary key to compare value in passed in data object with dest row
+	 * @param data - Updated data
+	 * @returns Array of record objects
 	 */
-	public async upsert(key: string, data: Partial<IFields>, config?: Partial<AirtablePlusPlusOptions>) {
+	public async upsert(key: string, data: Partial<IFields>) {
 		if (!key || !data) throw new Error('Key and data are required, but not provided');
-		const cfg = this._mergeConfig(config ?? {});
 
-		const rows = (await this.read(
-			{ filterByFormula: `${this._formatColumnFilter(key)} = ${data[key]}` },
-			cfg
-		)) as AirtablePlusPlusRecord<IFields>[];
+		const rows = (await this.read({ filterByFormula: `${this._formatColumnFilter(key)} = ${data[key]}` })) as AirtablePlusPlusRecord<IFields>[];
 
-		return rows.length === 0 ? this.create(data, cfg) : rows.map((row) => this.update(row.id, data, cfg));
-	}
-
-	/**
-	 * Performs validations on object for current function run
-	 * Allows the package user to pass in an override config
-	 * object to change table name, apiKey, etc. at any time
-	 *
-	 * @ignore
-	 * @param {Object} config - override config object
-	 * @returns {Object} - local configuration object
-	 */
-	protected _mergeConfig(config: string | Partial<AirtablePlusPlusOptions>) {
-		if (!config) return this.config;
-		let override = {} as Partial<AirtablePlusPlusOptions>;
-		if (typeof config === 'string') override.tableName = config;
-		if (typeof config === 'object') {
-			override = config;
-		}
-
-		const cfg = { ...this.config, ...override };
-		return cfg;
+		return rows.length === 0 ? this.create(data) : rows.map((row) => this.update(row.id, data));
 	}
 
 	/**
@@ -333,8 +263,8 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * Ex. 'Column ID' => '{Column ID}'
 	 *
 	 * @ignore
-	 * @param {string} columnName - Airtable Column name being used in a filter
-	 * @returns {string} - formatted column name
+	 * @param columnName - Airtable Column name being used in a filter
+	 * @returns formatted column name
 	 */
 	protected _formatColumnFilter(columnName = '') {
 		columnName = `${columnName}`;
