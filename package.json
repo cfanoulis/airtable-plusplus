@@ -1,6 +1,6 @@
 {
 	"name": "airtable-plusplus",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "A TypeScript fork of `airtable-plus`, the Airtable Node library designed for async/await.",
 	"main": "./dist/AirtablePlusPlus.js",
 	"types": "./dist/AirtablePlusPlus.d.ts",
