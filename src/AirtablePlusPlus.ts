@@ -241,14 +241,13 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @example
 	 * const res = await inst.upsert('primarKeyID', data);
 	 *
-	 * @param key - Primary key to compare value in passed in data object with dest row
-	 * @param data - Updated data
+	 * @param key - The column you want to use as a unique ID.
+	 * @param data - Updated data. Make sure to include the key you specified above alongside a value that will be used as the primary key
 	 * @returns Array of record objects
 	 */
 	public async upsert(key: string, data: Partial<IFields>) {
 		if (!key || !data) throw new Error('Key and data are required, but not provided');
-
-		const rows = (await this.read({ filterByFormula: `${this._formatColumnFilter(key)} = ${data[key]}` })) as AirtablePlusPlusRecord<IFields>[];
+		const rows = (await this.read({ filterByFormula: `${this._formatColumnFilter(key)} = "${data[key]}"` })) as AirtablePlusPlusRecord<IFields>[];
 
 		return rows.length === 0 ? this.create(data) : rows.map((row) => this.update(row.id, data));
 	}
