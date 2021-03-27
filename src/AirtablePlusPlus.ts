@@ -82,9 +82,28 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @param data - Create data object
 	 * @returns Created Record Object
 	 */
-	public async create(data: Partial<IFields>) {
-		if (!data) throw new Error('No data provided');
+	public async create(data: Partial<IFields>): Promise<AirtablePlusPlusRecord<IFields>>;
 
+	/**
+	 * Creates a new row using the supplied data object as row values.
+	 * The object must contain valid keys that correspond to the name and
+	 * data type of the Airtable table schema being written into, else it will
+	 * throw an error.
+	 *
+	 * @example
+	 * const res = await inst.create({ firstName: 'foo' });
+	 *
+	 * @param data - Array of data objects
+	 * @returns an array of created records
+	 */
+	public async create(data: Partial<IFields>[]): Promise<AirtablePlusPlusRecord<IFields>[]>;
+	public async create(data: Partial<IFields> | Partial<IFields>[]) {
+		if (!data) throw new Error('No data provided');
+		if (Array.isArray(data)) {
+			if (data.length < 1) throw new Error('No data provided');
+			const record = await this.table.create(data);
+			return record.map((rec) => rec._rawJson) as AirtablePlusPlusRecord<IFields>[];
+		}
 		const record = await this.table.create(data);
 		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
 	}
@@ -122,7 +141,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @example
 	 * const res = await inst.find('1234');
 	 *
-	 * @param rowID - Airtable Row ID to query data from
+	 * @param rowID - the internal Airtable Row ID to query data from
 	 * @returns Record object
 	 */
 	public async find(rowID: string) {
@@ -131,21 +150,39 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	}
 
 	/**
+	 * Updates multiple rows in Airtable. Unlike the replace method anything
+	 * not passed into the update data object still will be retained.
+	 * You must send in an object with the keys in the same casing
+	 * as the Airtable table columns.
+	 *
+	 * @example
+	 * const res = await inst.update('1234', { "First Name": 'foobar' });
+	 *
+	 * @param data - Bulk update data. recordId is the internal Airtable Row Id. Data is the row data with keys that you'd like to update
+	 * @returns Array of record objects
+	 */
+	public async update(data: { recordId: string; data: Partial<IFields> }[]): Promise<AirtablePlusPlusRecord<IFields>[]>;
+	/**
 	 * Updates a row in Airtable. Unlike the replace method anything
 	 * not passed into the update data object still will be retained.
 	 * You must send in an object with the keys in the same casing
-	 * as the Airtable table columns (even when using camelCase=true in config)
+	 * as the Airtable table columns.
 	 *
 	 * @example
-	 * const res = await inst.update('1234', { firstName: 'foobar' });
+	 * const res = await inst.update('1234', { "First Name": "Zfogg" });
 	 *
 	 * @param rowID - Airtable Row ID to update
 	 * @param data - row data with keys that you'd like to update
 	 * @returns Array of record objects
 	 */
-	public async update(rowID: string, data: Partial<IFields>) {
-		const record = await this.table.update(rowID, data);
-		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
+	public async update(rowID: string, data: Partial<IFields>): Promise<AirtablePlusPlusRecord<IFields>>;
+	public async update(rowOrbulkData: string | { recordId: string; data: Partial<IFields> }[], data?: Partial<IFields>) {
+		if (Array.isArray(rowOrbulkData)) {
+			const record = await this.table.update(rowOrbulkData);
+			return record.map((record) => record._rawJson);
+		}
+		const record = await this.table.update(rowOrbulkData, data);
+		return record._rawJson;
 	}
 
 	/**
@@ -161,24 +198,47 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 */
 	public async updateWhere(where: string, data: Partial<IFields>) {
 		const rows = await this.read({ filterByFormula: where });
-		return rows.map((row) => this.update(row.id, data));
+		const bulkData = rows.map((row) => {
+			return { recordId: row.id, data };
+		});
+		return this.update(bulkData);
 	}
 
+	/**
+	 * Bulk replaces given rows in airtable. Similar to the update function,
+	 * the only difference is this will completely overwrite the rows.
+	 * Any cells not passed in will be deleted from source row.
+	 *
+	 * @example
+	 * const res = await inst.replace([{ recordId: 'rec001',
+	 *    data: {"First Name": "Zfogg"}
+	 *  }]);
+	 *
+	 * @param rowID - Airtable Row ID to replace
+	 * @param data - row data with keys that you'd like to replace
+	 * @returns Record object
+	 */
+	public async replace(data: { recordId: string; data: IFields }[]): Promise<AirtablePlusPlusRecord<IFields>[]>;
 	/**
 	 * Replaces a given row in airtable. Similar to the update function,
 	 * the only difference is this will completely overwrite the row.
 	 * Any cells not passed in will be deleted from source row.
 	 *
 	 * @example
-	 * const res = await inst.replace('1234', { firstName: 'foobar' });
+	 * const res = await inst.replace('rec001', { "First Name": "Zfogg" });
 	 *
 	 * @param rowID - Airtable Row ID to replace
 	 * @param data - row data with keys that you'd like to replace
 	 * @returns Record object
 	 */
-	public async replace(rowID: string, data: IFields) {
-		const record = await this.table.replace(rowID, data);
-		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
+	public async replace(rowID: string, data: IFields): Promise<AirtablePlusPlusRecord<IFields>>;
+	public async replace(rowOrbulkData: string | { recordId: string; data: IFields }[], data?: IFields) {
+		if (Array.isArray(rowOrbulkData)) {
+			const record = await this.table.replace(rowOrbulkData);
+			return record.map((record) => record._rawJson);
+		}
+		const record = await this.table.replace(rowOrbulkData, data);
+		return record._rawJson;
 	}
 
 	/**
@@ -243,6 +303,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 *
 	 * @param key - The column you want to use as a unique ID.
 	 * @param data - Updated data. Make sure to include the key you specified above alongside a value that will be used as the primary key
+	 * If multiple entries are found with the same primary key, **all of them** will be updated
 	 * @returns Array of record objects
 	 */
 	public async upsert(key: string, data: Partial<IFields>) {
