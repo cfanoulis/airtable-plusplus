@@ -14,7 +14,7 @@
 		"build": "tsc",
 		"doc": "typedoc --options ./typedoc.json",
 		"release": "semantic-release",
-		"prepare": "husky install",
+		"postinstall": "husky install",
 		"build:prod": "rollup -c rollup.config.ts"
 	},
 	"config": {
