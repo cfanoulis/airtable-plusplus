@@ -78,25 +78,25 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * throw an error.
 	 *
 	 * @example
-	 * const res = await inst.create({ firstName: 'foo' });
+	 * const res = await inst.create({ "First Name": 'foo' });
 	 *
 	 * @param data - Create data object
-	 * @returns Created Record Object
+	 * @returns an array of created records
 	 */
 	public async create(data: Partial<IFields>): Promise<AirtablePlusPlusRecord<IFields>>;
-
 	/**
-	 * Creates a new row using the supplied data object as row values.
-	 * The object must contain valid keys that correspond to the name and
+	 * Creates rows using the supplied data objects as row values.
+	 * The objects must contain valid keys that correspond to the name and
 	 * data type of the Airtable table schema being written into, else it will
 	 * throw an error.
 	 *
 	 * @example
-	 * const res = await inst.create({ firstName: 'foo' });
+	 * const res = await inst.create([{ "First Name": 'foo' }, { "First Name": 'bar' }]);
 	 *
 	 * @param data - Array of data objects
-	 * @returns an array of created records
+	 * @returns Created Record Object
 	 */
+
 	public async create(data: Partial<IFields>[]): Promise<AirtablePlusPlusRecord<IFields>[]>;
 	public async create(data: Partial<IFields> | Partial<IFields>[]) {
 		if (!data) throw new Error('No data provided');
@@ -157,7 +157,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * as the Airtable table columns.
 	 *
 	 * @example
-	 * const res = await inst.update('1234', { "First Name": 'foobar' });
+	 * const res = await inst.update([{id: 'rec1234567', fields: {"First Name": "Zfogg"}}]);
 	 *
 	 * @param data - Bulk update data. recordId is the internal Airtable Row Id. Fields is the row data with keys that you'd like to update
 	 * @returns Array of record objects
@@ -170,7 +170,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * as the Airtable table columns.
 	 *
 	 * @example
-	 * const res = await inst.update('1234', { "First Name": "Zfogg" });
+	 * const res = await inst.update('rec98765432', { "First Name": "Zfogg" });
 	 *
 	 * @param rowID - Airtable Row ID to update
 	 * @param data - row data with keys that you'd like to update
@@ -191,7 +191,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * be formatted in the valid Airtable formula syntax (see Airtable API docs)
 	 *
 	 * @example
-	 * const res = await inst.updateWhere('firstName = "foo"', { firstName: 'fooBar' });
+	 * const res = await inst.updateWhere('firstName = "foo"', { firstName: 'Zefogg' });
 	 *
 	 * @param  where - filterByFormula string to filter table data by
 	 * @param  data - Data to update if where condition is met
@@ -211,9 +211,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * Any cells not passed in will be deleted from source row.
 	 *
 	 * @example
-	 * const res = await inst.replace([{ recordId: 'rec001',
-	 *    data: {"First Name": "Zfogg"}
-	 *  }]);
+	 * const res = await inst.replace([{ id: 'rec001', fields: {"First Name": "Zfogg"}}]);
 	 *
 	 * @param rowID - Airtable Row ID to replace
 	 * @param data - row data with keys that you'd like to replace
@@ -264,8 +262,8 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @example
 	 * const res = await inst.delete('1234');
 	 *
-	 * @param rowID - Either an arroar of or a single Airtable Row ID to delete
-	 * @returns Record object
+	 * @param rowID - Either an array of Airtable Row IDs or a single Airtable Row ID to delete
+	 * @returns Deleted Record object(s)
 	 */
 	public async delete(rowID: string | string[]) {
 		// even if its a single string, it will be fine.
@@ -317,16 +315,15 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 			/*
 			 * Hi, I need help making this better. Please PR a better solution if you can think one!
 			 */
-			console.log('Filtering data');
+
 			// Clear out invalid data objects, just to prevent wonkiness down the road
 			const filteredData = data.filter(Boolean) as Partial<IFields>[];
 			if (filteredData.length < 1) throw new Error('No valid data provided in the data array');
-			console.log('Get row data');
+
 			// Fetch all rows that may match any of our primary keys
 			const filter = filteredData.map((e) => `${this._formatColumnFilter(key)} = "${e[key]}"`).join(', ');
 			const rows = await this.read({ filterByFormula: `OR(${filter})` });
-			console.log(rows);
-			console.log('Creating data');
+
 			// Create a list of keys that already exist
 			const pKeysExist = rows.map((e) => e.fields[key]);
 
@@ -338,12 +335,9 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 
 				return { id: e.id, fields: newData };
 			});
-			console.log('Update data:');
-			console.log(updateData);
+
 			// Now we're left only with data objects that need to be created
 			const createData = data.filter((d) => !pKeysExist.includes(d[key]));
-			console.log('Create data:');
-			console.log(createData);
 
 			return [...(await this.update(updateData)), ...(await this.create(createData))];
 		}
@@ -363,7 +357,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 *
 	 * Ex. 'Column ID' => '{Column ID}'
 	 *
-	 * @ignore
+	 * @internal
 	 * @param columnName - Airtable Column name being used in a filter
 	 * @returns formatted column name
 	 */
