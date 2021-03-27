@@ -2,6 +2,6 @@
 	"root": true,
 	"extends": "@sapphire",
 	"parserOptions": {
-		"project": "./tsconfig.json"
+		"project": "./tsconfig.lint.json"
 	}
 }
