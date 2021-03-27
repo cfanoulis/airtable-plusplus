@@ -59,6 +59,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 *
 	 * @example
 	 * const inst = new AirtablePlus({
+	 *  apiKey: 'key001zdhiyfvg553
 	 *  baseID: 'xxx',
 	 *  tableName: 'Table 1'
 	 * });
@@ -101,7 +102,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 		if (!data) throw new Error('No data provided');
 		if (Array.isArray(data)) {
 			if (data.length < 1) throw new Error('No data provided');
-			const record = await this.table.create(data);
+			const record = await this.table.create(data.map((e) => ({ fields: e })));
 			return record.map((rec) => rec._rawJson) as AirtablePlusPlusRecord<IFields>[];
 		}
 		const record = await this.table.create(data);
@@ -139,12 +140,12 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * Get data for a specific row on Airtable
 	 *
 	 * @example
-	 * const res = await inst.find('1234');
+	 * const res = await inst.get('rec1234');
 	 *
 	 * @param rowID - the internal Airtable Row ID to query data from
 	 * @returns Record object
 	 */
-	public async find(rowID: string) {
+	public async get(rowID: string) {
 		const record = await this.table.find(rowID);
 		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
 	}
@@ -158,10 +159,10 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @example
 	 * const res = await inst.update('1234', { "First Name": 'foobar' });
 	 *
-	 * @param data - Bulk update data. recordId is the internal Airtable Row Id. Data is the row data with keys that you'd like to update
+	 * @param data - Bulk update data. recordId is the internal Airtable Row Id. Fields is the row data with keys that you'd like to update
 	 * @returns Array of record objects
 	 */
-	public async update(data: { recordId: string; data: Partial<IFields> }[]): Promise<AirtablePlusPlusRecord<IFields>[]>;
+	public async update(data: { id: string; fields: Partial<IFields> }[]): Promise<AirtablePlusPlusRecord<IFields>[]>;
 	/**
 	 * Updates a row in Airtable. Unlike the replace method anything
 	 * not passed into the update data object still will be retained.
@@ -176,7 +177,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @returns Array of record objects
 	 */
 	public async update(rowID: string, data: Partial<IFields>): Promise<AirtablePlusPlusRecord<IFields>>;
-	public async update(rowOrbulkData: string | { recordId: string; data: Partial<IFields> }[], data?: Partial<IFields>) {
+	public async update(rowOrbulkData: string | { id: string; fields: Partial<IFields> }[], data?: Partial<IFields>) {
 		if (Array.isArray(rowOrbulkData)) {
 			const record = await this.table.update(rowOrbulkData);
 			return record.map((record) => record._rawJson);
@@ -199,7 +200,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	public async updateWhere(where: string, data: Partial<IFields>) {
 		const rows = await this.read({ filterByFormula: where });
 		const bulkData = rows.map((row) => {
-			return { recordId: row.id, data };
+			return { id: row.id, fields: data };
 		});
 		return this.update(bulkData);
 	}
@@ -218,7 +219,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @param data - row data with keys that you'd like to replace
 	 * @returns Record object
 	 */
-	public async replace(data: { recordId: string; data: IFields }[]): Promise<AirtablePlusPlusRecord<IFields>[]>;
+	public async replace(data: { id: string; fields: IFields }[]): Promise<AirtablePlusPlusRecord<IFields>[]>;
 	/**
 	 * Replaces a given row in airtable. Similar to the update function,
 	 * the only difference is this will completely overwrite the row.
@@ -232,7 +233,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @returns Record object
 	 */
 	public async replace(rowID: string, data: IFields): Promise<AirtablePlusPlusRecord<IFields>>;
-	public async replace(rowOrbulkData: string | { recordId: string; data: IFields }[], data?: IFields) {
+	public async replace(rowOrbulkData: string | { id: string; fields: IFields }[], data?: IFields) {
 		if (Array.isArray(rowOrbulkData)) {
 			const record = await this.table.replace(rowOrbulkData);
 			return record.map((record) => record._rawJson);
@@ -263,7 +264,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @example
 	 * const res = await inst.delete('1234');
 	 *
-	 * @param rowID - Airtable Row ID to delete
+	 * @param rowID - Either an arroar of or a single Airtable Row ID to delete
 	 * @returns Record object
 	 */
 	public async delete(rowID: string | string[]) {
@@ -287,7 +288,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @returns {Promise} Array of record objects
 	 */
 	public async deleteWhere(where: string) {
-		const rows = (await this.read({ filterByFormula: where })) as AirtablePlusPlusRecord<IFields>[];
+		const rows = await this.read({ filterByFormula: where });
 
 		return rows.map((row) => {
 			return this.delete(row.id);
@@ -306,10 +307,53 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * If multiple entries are found with the same primary key, **all of them** will be updated
 	 * @returns Array of record objects
 	 */
-	public async upsert(key: string, data: Partial<IFields>) {
+	public async upsert(key: string, data: Partial<IFields>): Promise<AirtablePlusPlusRecord<IFields>>;
+	public async upsert(key: string, data: Partial<IFields>[]): Promise<AirtablePlusPlusRecord<IFields>[]>;
+	public async upsert(key: string, data: Partial<IFields> | Partial<IFields>[]) {
 		if (!key || !data) throw new Error('Key and data are required, but not provided');
-		const rows = (await this.read({ filterByFormula: `${this._formatColumnFilter(key)} = "${data[key]}"` })) as AirtablePlusPlusRecord<IFields>[];
 
+		// Bulk data handling
+		if (Array.isArray(data)) {
+			/*
+			 * Hi, I need help making this better. Please PR a better solution if you can think one!
+			 */
+			console.log('Filtering data');
+			// Clear out invalid data objects, just to prevent wonkiness down the road
+			const filteredData = data.filter(Boolean) as Partial<IFields>[];
+			if (filteredData.length < 1) throw new Error('No valid data provided in the data array');
+			console.log('Get row data');
+			// Fetch all rows that may match any of our primary keys
+			const filter = filteredData.map((e) => `${this._formatColumnFilter(key)} = "${e[key]}"`).join(', ');
+			const rows = await this.read({ filterByFormula: `OR(${filter})` });
+			console.log(rows);
+			console.log('Creating data');
+			// Create a list of keys that already exist
+			const pKeysExist = rows.map((e) => e.fields[key]);
+
+			// Prepare update data
+			const updateData = rows.map((e) => {
+				// Find the new data object based on the primary key specified
+				const newDataIndex = filteredData.findIndex((i) => e.fields[key] === i[key]);
+				const [newData] = filteredData.splice(newDataIndex, 1);
+
+				return { id: e.id, fields: newData };
+			});
+			console.log('Update data:');
+			console.log(updateData);
+			// Now we're left only with data objects that need to be created
+			const createData = data.filter((d) => !pKeysExist.includes(d[key]));
+			console.log('Create data:');
+			console.log(createData);
+
+			return [...(await this.update(updateData)), ...(await this.create(createData))];
+		}
+
+		// Handling a single piece of data. Data? whatever, I don't care how you pronounce it
+		const rows = await this.read({
+			filterByFormula: `${this._formatColumnFilter(key)} = "${data[key]}"`
+		});
+
+		// If read doesn't return any results, then create the object. Else, update ***everything****
 		return rows.length === 0 ? this.create(data) : rows.map((row) => this.update(row.id, data));
 	}
 
@@ -323,7 +367,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @param columnName - Airtable Column name being used in a filter
 	 * @returns formatted column name
 	 */
-	protected _formatColumnFilter(columnName = '') {
+	protected _formatColumnFilter(columnName: string) {
 		columnName = `${columnName}`;
 		return columnName.split(' ').length > 1 ? `{${columnName}}` : columnName;
 	}
