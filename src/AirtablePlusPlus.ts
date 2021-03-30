@@ -324,22 +324,23 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 			const filter = filteredData.map((e) => `${this._formatColumnFilter(key)} = "${e[key]}"`).join(', ');
 			const rows = await this.read({ filterByFormula: `OR(${filter})` });
 
-			// Create a list of keys that already exist
-			const pKeysExist = rows.map((e) => e.fields[key]);
-
 			// Prepare update data
-			const updateData = rows.map((e) => {
-				// Find the new data object based on the primary key specified
-				const newDataIndex = filteredData.findIndex((i) => e.fields[key] === i[key]);
-				const [newData] = filteredData.splice(newDataIndex, 1);
+			const updateData = rows
+				.map((e) => {
+					// Find the new data object based on the primary key specified
+					const newDataIndex = filteredData.findIndex((i) => e.fields[key] === i[key]);
+					if (newDataIndex === -1) return false;
+					const [newData] = filteredData.splice(newDataIndex, 1);
 
-				return { id: e.id, fields: newData };
-			});
+					return { id: e.id, fields: newData };
+				})
+				.filter(Boolean) as { id: string; fields: Partial<IFields> }[];
+
+			// If we have don't have any other data, just update
+			return data.length === 0 ? this.update(updateData) : [...(await this.update(updateData)), ...(await this.create(data))];
 
 			// Now we're left only with data objects that need to be created
-			const createData = data.filter((d) => !pKeysExist.includes(d[key]));
-
-			return [...(await this.update(updateData)), ...(await this.create(createData))];
+			// const createData = data.filter((d) => !pKeysExist.includes(d[key]));
 		}
 
 		// Handling a single piece of data. Data? whatever, I don't care how you pronounce it
