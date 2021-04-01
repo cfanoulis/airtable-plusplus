@@ -14,7 +14,6 @@
 		"build": "tsc",
 		"doc": "typedoc --options ./typedoc.json && git checkout HEAD -- ./docs/CNAME",
 		"release": "semantic-release",
-		"postinstall": "husky install",
 		"build:prod": "rollup -c rollup.config.ts"
 	},
 	"config": {
