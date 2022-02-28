@@ -7,12 +7,21 @@ export type ResponseResult<DataTypeReq, JsonType> = DataTypeReq extends ReturnRe
 	: never;
 
 export interface IListRecordsResponse {
-	records: Record[];
+	records: IAirtableRecord[];
 	offset?: string;
 }
 
-export interface Record<IFields = Record<string, unknown>> {
+export interface IAirtableRecord<IFields> {
 	id: string;
 	fields: IFields;
 	createdTime: string;
+}
+
+export interface IAirtableRequestOptions<IFields> {
+	fields: Array<keyof IFields>;
+	filterByFormula: string;
+	maxRecords: number;
+	pageSize: number;
+	sort: { field: keyof FieldInterface; direction: 'asc' | 'desc' }[];
+	view: string;
 }
