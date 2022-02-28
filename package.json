@@ -1,6 +1,6 @@
 {
 	"name": "airtable-plusplus",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"description": "A TypeScript fork of `airtable-plus`, the Airtable Node library designed for async/await.",
 	"main": "./dist/AirtablePlusPlus.js",
 	"module": "./dist/AirtablePlusPlus.es.mjs",
@@ -23,7 +23,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/hackropolis/airtable-plusplus.git"
+		"url": "https://github.com/cfanoulis/airtable-plusplus.git"
 	},
 	"keywords": [
 		"airtable",
@@ -45,9 +45,9 @@
 		"dist"
 	],
 	"bugs": {
-		"url": "https://github.com/hackropolis/airtable-plusplus/issues"
+		"url": "https://github.com/cfanoulis/airtable-plusplus/issues"
 	},
-	"homepage": "https://github.com/hackropolis/airtable-plusplus#readme",
+	"homepage": "https://github.com/cfanoulis/airtable-plusplus#readme",
 	"dependencies": {
 		"airtable": "^0.11.0"
 	},
