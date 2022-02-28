@@ -1,6 +1,4 @@
 import fetch from 'node-fetch';
-import type { IAirtableRequestOptions, IListRecordsResponse, ResponseResult } from './wrapper';
-
 export class APIWrapper<IFields = Record<string, unknown>> {
 	protected headers: {
 		Authorization: string;
@@ -16,10 +14,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 
 	public async *getRecordsIterator() {
 		// TODO: Add error handling.
-		const firstPage = await this.doMeARequest<ReturnRequestAs.JSON, IListRecordsResponse>(
-			'https://api.airtable.com/v0/app8PMCs1qe4ALMxU/Companies',
-			ReturnRequestAs.JSON
-		);
+		const firstPage = await this.doMeARequest<ReturnRequestAs.JSON, IListRecordsResponse>(this.conjureUrl({}), ReturnRequestAs.JSON);
 
 		let lastOffset = firstPage.data.offset ?? false;
 		// records are always an array, so this will have no problem
@@ -28,14 +23,13 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		while (true) {
 			const { done, value } = recordsIter.next();
 
-			// Here, we should trigger getting a new page;
 			if (done) {
 				// if there's no other page, we're done, gtfo
 				if (!lastOffset) break;
 
 				// TODO: Add error handling.
 				const nextPage = (await this.doMeARequest<ReturnRequestAs.JSON, IListRecordsResponse>(
-					`https://api.airtable.com/v0/app8PMCs1qe4ALMxU/Companies?offset=${lastOffset}`,
+					this.conjureUrl({ offset: lastOffset }),
 					ReturnRequestAs.JSON
 				)) as ResponseResult<ReturnRequestAs.JSON, IListRecordsResponse>;
 
@@ -73,10 +67,10 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		}
 	}
 
-	protected conjureUrl({ fields, filterByFormula, maxRecords, pageSize, sort, view }: IAirtableRequestOptions<IFields>) {
+	protected conjureUrl({ fields, filterByFormula, maxRecords, pageSize, sort, view, offset }: IAirtableRequestOptions<IFields>) {
 		const reqUrl = new URL(`https://api.airtable.com/v0/${this.baseId}/${this.tableName}`);
 
-		for (const field of fields) {
+		for (const field of fields ?? []) {
 			const value = typeof field === 'string' ? field : field.toString();
 			reqUrl.searchParams.append('fields[]', value);
 		}
@@ -86,6 +80,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		// Just... why?
 		if (filterByFormula) reqUrl.searchParams.append('filterByFormula', filterByFormula.trim());
 		if (view) reqUrl.searchParams.append('view', view.trim());
+		if (offset) reqUrl.searchParams.append('offset', offset.trim());
 		if (maxRecords) reqUrl.searchParams.append('maxRecords', maxRecords.toString(10));
 		if (pageSize) reqUrl.searchParams.append('pageSize', pageSize.toString(10));
 
@@ -99,7 +94,34 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	}
 }
 
-export const enum ReturnRequestAs {
+const enum ReturnRequestAs {
 	Text,
 	JSON
+}
+
+type ResponseResult<DataTypeReq, JsonType> = DataTypeReq extends ReturnRequestAs.JSON
+	? { status: number; data: JsonType }
+	: DataTypeReq extends ReturnRequestAs.Text
+	? { status: number; data: string }
+	: never;
+
+interface IListRecordsResponse<IFields = Record<string, string | number>> {
+	records: IAirtableRecord<IFields>[];
+	offset?: string;
+}
+
+interface IAirtableRecord<IFields> {
+	id: string;
+	fields: IFields;
+	createdTime: string;
+}
+
+interface IAirtableRequestOptions<IFields> {
+	fields?: Array<keyof IFields>;
+	filterByFormula?: string;
+	maxRecords?: number;
+	pageSize?: number;
+	sort?: { field: keyof IFields; direction: 'asc' | 'desc' }[];
+	view?: string;
+	offset?: string;
 }
