@@ -1,31 +1,74 @@
+import fetch from 'node-fetch';
+import type { IListRecordsResponse, ResponseResult } from './wrapper';
 export class APIWrapper {
 	protected headers: {
 		Authorization: string;
 		'User-Agent': 'AirtablePlusPlus/v2;';
 	};
+
 	public constructor(public baseId: string, public tableName: string, private apiKey: string) {
 		this.headers = {
-			Authorization: this.apiKey,
+			Authorization: `Bearer ${this.apiKey}`,
 			'User-Agent': 'AirtablePlusPlus/v2;'
 		};
 	}
 
-	public *getRecordsIterator() {
-		let lastOffset = '';
-		let recordsIter = [1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 3, 4, 5, 7, 8][Symbol.iterator]();
-		while (true) {
-			// here, the arr should consist of actual records :P
+	public async *getRecordsIterator() {
+		// TODO: Add error handling.
+		const firstPage = await this.doMeARequest<ReturnRequestAs.JSON, IListRecordsResponse>(
+			'https://api.airtable.com/v0/app8PMCs1qe4ALMxU/Companies',
+			ReturnRequestAs.JSON
+		);
 
+		let lastOffset = firstPage.data.offset ?? false;
+		// records are always an array, so this will have no problem
+		let recordsIter = firstPage.data.records[Symbol.iterator]();
+
+		while (true) {
 			const { done, value } = recordsIter.next();
 
 			// Here, we should trigger getting a new page;
-			if (done) break;
+			if (done) {
+				// if there's no other page, we're done, gtfo
+				if (!lastOffset) break;
+
+				// TODO: Add error handling.
+				const nextPage = (await this.doMeARequest<ReturnRequestAs.JSON, IListRecordsResponse>(
+					`https://api.airtable.com/v0/app8PMCs1qe4ALMxU/Companies?offset=${lastOffset}`,
+					ReturnRequestAs.JSON
+				)) as ResponseResult<ReturnRequestAs.JSON, IListRecordsResponse>;
+
+				// if this *is* the last page, then there will be no offset property.
+				lastOffset = nextPage.data.offset ?? false;
+
+				// If, for *some* reason we have no records, gtfo
+				if (nextPage.data.records.length === 0) break;
+				recordsIter = nextPage.data.records[Symbol.iterator]();
+
+				continue;
+			}
 
 			yield value;
 		}
 	}
 
-	private doMeARequest(url: string) {}
+	private async doMeARequest<T extends ReturnRequestAs, RequestResult = Record<string, unknown>>(
+		url: string,
+		returnAs: T
+	): Promise<ResponseResult<T, RequestResult>> {
+		const req = await fetch(url, { headers: this.headers });
+		switch (returnAs) {
+			case ReturnRequestAs.JSON:
+				const json = (await req.json()) as RequestResult;
+				return { status: req.status, data: json } as ResponseResult<T, RequestResult>;
+			case ReturnRequestAs.Text:
+				const txt = await req.text();
+				return { status: req.status, data: txt } as ResponseResult<T, RequestResult>;
+			default:
+				return { status: -1, data: "This shouldn't have happened" } as ResponseResult<T, RequestResult>;
+		}
+	}
+
 	// private getAllRecords({ fields, filterFormula, maxRecords }: ListRecordsParams) {
 	// 	const requestURL = new URL(`https://airtable.com/v0/${this.baseId}/${this.tableName}`);
 
@@ -43,4 +86,9 @@ export class APIWrapper {
 
 	// 	const;
 	// }
+}
+
+export const enum ReturnRequestAs {
+	Text,
+	JSON
 }
