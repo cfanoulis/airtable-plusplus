@@ -22,5 +22,6 @@
 	"scripts": {
 		"build:clean": "rimraf dist && yarn build",
 		"build": "tsc -p ."
-	}
+	},
+	"packageManager": "yarn@3.2.0"
 }
