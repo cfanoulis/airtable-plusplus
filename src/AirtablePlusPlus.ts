@@ -1,6 +1,5 @@
-import Airtable from 'airtable';
+import Airtable, { FieldSet } from 'airtable';
 import type { QueryParams } from 'airtable/lib/query_params';
-import type AirtableRecord from 'airtable/lib/record';
 import type Table from 'airtable/lib/table';
 
 /**
@@ -51,8 +50,8 @@ export interface AirtablePlusPlusRecord<FieldType> {
  * An AirtablePlusPlus instance. Y'know, the thing you're here for.
  * @typeParam IFields - An interface to describe how your data is formatted.
  */
-class AirtablePlusPlus<IFields extends Record<string, unknown>> {
-	public table: Table;
+class AirtablePlusPlus<IFields extends FieldSet> {
+	public table: Table<IFields>;
 	/**
 	 * Creates an AirtablePlusPlus instance, representing a table.
 	 * The configuration options you provide here may be overriden later
@@ -106,7 +105,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 			return record.map((rec) => rec._rawJson) as AirtablePlusPlusRecord<IFields>[];
 		}
 		const record = await this.table.create(data);
-		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
+		return record._rawJson as unknown as AirtablePlusPlusRecord<IFields>;
 	}
 
 	/**
@@ -122,7 +121,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 * @param params Airtable api parameters
 	 * @returns Array of record objects
 	 */
-	public async read(params?: QueryParams) {
+	public async read(params?: QueryParams<IFields>) {
 		let data: AirtablePlusPlusRecord<IFields>[] = [];
 		await this.table
 			.select(params)
@@ -147,7 +146,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 */
 	public async get(rowID: string) {
 		const record = await this.table.find(rowID);
-		return (record._rawJson as unknown) as AirtablePlusPlusRecord<IFields>;
+		return record._rawJson as unknown as AirtablePlusPlusRecord<IFields>;
 	}
 
 	/**
@@ -182,6 +181,7 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 			const record = await this.table.update(rowOrbulkData);
 			return record.map((record) => record._rawJson);
 		}
+		if (!data) throw new Error('No data was provided for update!');
 		const record = await this.table.update(rowOrbulkData, data);
 		return record._rawJson;
 	}
@@ -236,6 +236,8 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 			const record = await this.table.replace(rowOrbulkData);
 			return record.map((record) => record._rawJson);
 		}
+
+		if (!data) throw new Error('No data was provided for replace!');
 		const record = await this.table.replace(rowOrbulkData, data);
 		return record._rawJson;
 	}
@@ -267,11 +269,11 @@ class AirtablePlusPlus<IFields extends Record<string, unknown>> {
 	 */
 	public async delete(rowID: string | string[]) {
 		// even if its a single string, it will be fine.
-		const record: AirtableRecord | AirtableRecord[] = await this.table.destroy(rowID as string[]);
+		const records = await this.table.destroy(rowID as string[]);
 
-		return Array.isArray(record)
-			? record.map((rec) => ({ id: rec.id, fields: {}, createdTime: null }))
-			: { id: (record as AirtableRecord).id, fields: {}, createdTime: null };
+		return records.length === 1
+			? { id: records[0].id, fields: {}, createdTime: null }
+			: records.map((rec) => ({ id: rec.id, fields: {}, createdTime: null }));
 	}
 
 	/**
