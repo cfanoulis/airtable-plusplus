@@ -4,7 +4,7 @@ A less complicated, TypeScript fork of `airtable-plus`, the Airtable Node librar
 
 ## Documentation
 
-Documentation is provided at https://airtable-plusplus.fanoulis.dev
+Documentation is provided at https://atplusplus.fanoulis.dev/
 
 ## Support
 
