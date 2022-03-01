@@ -13,8 +13,14 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	}
 
 	public async *getRecordsIterator() {
-		// TODO: Add error handling.
-		const firstPage = await this.doWebRequest<IListRecordsResponse>({ url: this.conjureUrl({}) });
+		let firstPage = await this.doWebRequest<IListRecordsResponse>({ url: this.conjureUrl({}) });
+
+		// Validate nothing wen't wrong
+		if (typeof firstPage.data === 'undefined') throw new Error(`Did not receive any data from Airtable`);
+		if (firstPage.status !== 200) throw new Error(`Unexpected status code ${firstPage.status} when getting records`);
+
+		// If, for *some* reason we have no records, gtfo
+		if (firstPage.data.records.length === 0) return;
 
 		let lastOffset = firstPage.data.offset ?? false;
 		// records are always an array, so this will have no problem
@@ -27,10 +33,13 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 				// if there's no other page, we're done, gtfo
 				if (!lastOffset) break;
 
-				// TODO: Add error handling.
 				const nextPage = (await this.doWebRequest<IListRecordsResponse>({
 					url: this.conjureUrl({})
 				})) as ResponseResult<IListRecordsResponse>;
+
+				// Validate nothing wen't wrong
+				if (typeof nextPage.data === 'undefined') throw new Error(`Did not receive any data from Airtable`);
+				if (nextPage.status !== 200) throw new Error(`Unexpected status code ${firstPage.status} when getting records`);
 
 				// if this *is* the last page, then there will be no offset property.
 				lastOffset = nextPage.data.offset ?? false;
