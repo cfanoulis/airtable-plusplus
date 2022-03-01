@@ -8,20 +8,25 @@
 	"author": "Charalampos Fanoulis <yo@fanoulis.dev>",
 	"license": "MIT",
 	"dependencies": {
-		"node-fetch": "^3.2.0"
+		"node-fetch": "^3.2.1"
 	},
 	"devDependencies": {
-		"@typescript-eslint/eslint-plugin": "^5.12.1",
-		"@typescript-eslint/parser": "^5.12.1",
+		"@types/node-fetch": "^2.6.1",
+		"@typescript-eslint/eslint-plugin": "^5.13.0",
+		"@typescript-eslint/parser": "^5.13.0",
 		"eslint": "^8.10.0",
 		"eslint-plugin-prettier": "^4.0.0",
 		"prettier": "^2.5.1",
 		"tsup": "^5.11.13",
-		"typescript": "^4.5.5"
+		"typescript": "^4.6.2"
 	},
 	"scripts": {
 		"build:clean": "rimraf dist && yarn build",
-		"build": "tsc -p ."
+		"build": "tsc -p .",
+		"build:prod": "tsup --clean --format esm --minify --sourcemap --target es2020 --no-splitting --dts src/index.ts src"
+	},
+	"engines": {
+		"node": ">=14"
 	},
 	"packageManager": "yarn@3.2.0"
 }
