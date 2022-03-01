@@ -14,7 +14,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 
 	public async *getRecordsIterator() {
 		// TODO: Add error handling.
-		const firstPage = await this.doMeARequest<ReturnRequestAs.JSON, IListRecordsResponse>(this.conjureUrl({}), ReturnRequestAs.JSON);
+		const firstPage = await this.doWebRequest<IListRecordsResponse>({ url: this.conjureUrl({}) });
 
 		let lastOffset = firstPage.data.offset ?? false;
 		// records are always an array, so this will have no problem
@@ -28,10 +28,9 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 				if (!lastOffset) break;
 
 				// TODO: Add error handling.
-				const nextPage = (await this.doMeARequest<ReturnRequestAs.JSON, IListRecordsResponse>(
-					this.conjureUrl({ offset: lastOffset }),
-					ReturnRequestAs.JSON
-				)) as ResponseResult<ReturnRequestAs.JSON, IListRecordsResponse>;
+				const nextPage = (await this.doWebRequest<IListRecordsResponse>({
+					url: this.conjureUrl({})
+				})) as ResponseResult<IListRecordsResponse>;
 
 				// if this *is* the last page, then there will be no offset property.
 				lastOffset = nextPage.data.offset ?? false;
@@ -47,24 +46,18 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		}
 	}
 
-	protected async doMeARequest<T extends ReturnRequestAs, RequestResult = Record<string, unknown>>(
-		url: string,
-		returnAs: T
-	): Promise<ResponseResult<T, RequestResult>> {
-		const req = await fetch(url, { headers: this.headers });
-
-		switch (returnAs) {
-			case ReturnRequestAs.JSON:
-				const json = (await req.json()) as RequestResult;
-				return { status: req.status, data: json } as ResponseResult<T, RequestResult>;
-
-			case ReturnRequestAs.Text:
-				const txt = await req.text();
-				return { status: req.status, data: txt } as ResponseResult<T, RequestResult>;
-
-			default:
-				return { status: -1, data: "This shouldn't have happened" } as ResponseResult<T, RequestResult>;
-		}
+	protected async doWebRequest<JsonResultType = Record<string, unknown>>(options: {
+		url: string;
+		method?: DoRequestAs;
+		body?: string;
+		bodyType?: 'application/json' | 'application/x-www-form-urlencoded';
+	}) {
+		const req = await fetch(options.url, {
+			headers: { ...this.headers, 'Content-Type': options.bodyType ?? '' },
+			method: options.method ?? DoRequestAs.Get
+		});
+		const json = (await req.json()) as JsonResultType;
+		return { status: req.status, data: json } as ResponseResult<JsonResultType>;
 	}
 
 	protected conjureUrl({ fields, filterByFormula, maxRecords, pageSize, sort, view, offset }: IAirtableRequestOptions<IFields>) {
@@ -99,11 +92,14 @@ const enum ReturnRequestAs {
 	JSON
 }
 
-type ResponseResult<DataTypeReq, JsonType> = DataTypeReq extends ReturnRequestAs.JSON
-	? { status: number; data: JsonType }
-	: DataTypeReq extends ReturnRequestAs.Text
-	? { status: number; data: string }
-	: never;
+const enum DoRequestAs {
+	Get = 'GET',
+	Post = 'POST',
+	Put = 'PUT',
+	Delete = 'DELETE'
+}
+
+type ResponseResult<JsonType> = { status: number; data: JsonType };
 
 interface IListRecordsResponse<IFields = Record<string, string | number>> {
 	records: IAirtableRecord<IFields>[];
