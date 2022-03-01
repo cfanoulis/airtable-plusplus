@@ -55,6 +55,17 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		}
 	}
 
+	public async createRecord(recordData: Partial<IFields>) {
+		const { data, status } = await this.doWebRequest({
+			url: this.conjureUrl({}),
+			method: DoRequestAs.Post,
+			body: JSON.stringify({ records: [{ fields: recordData }] }),
+			bodyType: 'application/json'
+		});
+		if (status === 200 || status === 204) throw new Error(`Airtable returned code ${status}, with error information: ${data}`);
+		return data;
+	}
+
 	protected async doWebRequest<JsonResultType = Record<string, unknown>>(options: {
 		url: string;
 		method?: DoRequestAs;
