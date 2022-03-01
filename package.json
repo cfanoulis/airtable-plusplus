@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"type": "module",
 	"description": "amongus",
-	"main": "dist/index.mjs",
+	"main": "dist/index.js",
 	"repository": "https://github.com/cfanoulis/airtable-plusplus",
 	"author": "Charalampos Fanoulis <yo@fanoulis.dev>",
 	"license": "MIT",
