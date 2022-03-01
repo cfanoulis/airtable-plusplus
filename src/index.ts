@@ -1,3 +1,1 @@
-import { APIWrapper } from './wrapper/APIWrapper.js';
-
-export { APIWrapper };
+export { APIWrapper } from './wrapper/APIWrapper.js';
