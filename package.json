@@ -15,6 +15,7 @@
 		"@typescript-eslint/eslint-plugin": "^5.13.0",
 		"@typescript-eslint/parser": "^5.13.0",
 		"eslint": "^8.10.0",
+		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-prettier": "^4.0.0",
 		"prettier": "^2.5.1",
 		"standard-version": "^9.3.2",
@@ -25,6 +26,7 @@
 		"build:clean": "rimraf dist && yarn build",
 		"build": "tsc -p .",
 		"build:prod": "tsup --clean --format esm --minify --sourcemap --target es2020 --no-splitting --dts src/index.ts src",
+		"lint": "eslint src --ext ts",
 		"version:nightly": "standard-version --skip.commit --skip.tag --prerelease \"nightly.$(git rev-parse --verify --short HEAD)\""
 	},
 	"engines": {
