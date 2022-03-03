@@ -55,12 +55,12 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		}
 	}
 
-	public async createRecord(recordData: Partial<IFields> | Partial<IFields>[]) {
+	public async createRecord(recordData: Partial<IFields> | Partial<IFields>[], typecast = true) {
 		const records = Array.isArray(recordData) ? recordData.map((fields) => ({ fields })) : [{ fields: recordData }];
 		const { data, status } = await this.doWebRequest({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Post,
-			body: JSON.stringify({ records }),
+			body: JSON.stringify({ records, typecast }),
 			bodyType: 'application/json'
 		});
 		if (status === 200 || status === 204) throw new Error(`Airtable returned code ${status}, with error information: ${data}`);
