@@ -19,7 +19,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		if (typeof firstPage.data === 'undefined') throw new Error(`Did not receive any data from Airtable`);
 		if (firstPage.status !== 200) throw new Error(`Unexpected status code ${firstPage.status} when getting records`);
 
-		// If, for *some* reason we have no records, gtfo
+		// If, for *some* reason we have no records, stop
 		if (firstPage.data.records.length === 0) return;
 
 		let lastOffset = firstPage.data.offset ?? false;
