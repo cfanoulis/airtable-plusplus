@@ -57,7 +57,8 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 
 	public async createRecord(recordData: Partial<IFields> | Partial<IFields>[], typecast = true) {
 		const records = Array.isArray(recordData) ? recordData.map((fields) => ({ fields })) : [{ fields: recordData }];
-		const { data, status } = await this.doWebRequest({
+
+		const { data, status } = await this.doWebRequest<IAirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Post,
 			body: JSON.stringify({ records, typecast }),
