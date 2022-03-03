@@ -1,6 +1,6 @@
 {
 	"name": "airtable-plusplus",
-	"version": "1.0.0",
+	"version": "0.9.9",
 	"type": "module",
 	"description": "amongus",
 	"main": "dist/index.js",
@@ -17,16 +17,21 @@
 		"eslint": "^8.10.0",
 		"eslint-plugin-prettier": "^4.0.0",
 		"prettier": "^2.5.1",
+		"standard-version": "^9.3.2",
 		"tsup": "^5.11.13",
 		"typescript": "^4.6.2"
 	},
 	"scripts": {
 		"build:clean": "rimraf dist && yarn build",
 		"build": "tsc -p .",
-		"build:prod": "tsup --clean --format esm --minify --sourcemap --target es2020 --no-splitting --dts src/index.ts src"
+		"build:prod": "tsup --clean --format esm --minify --sourcemap --target es2020 --no-splitting --dts src/index.ts src",
+		"version:nightly": "standard-version --skip.commit --skip.tag --prerelease \"nightly.$(git rev-parse --verify --short HEAD)\""
 	},
 	"engines": {
 		"node": ">=14"
 	},
-	"packageManager": "yarn@3.2.0"
+	"packageManager": "yarn@3.2.0",
+	"files": [
+		"dist"
+	]
 }
