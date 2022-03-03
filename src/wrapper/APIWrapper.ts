@@ -68,6 +68,28 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		return data;
 	}
 
+	public updateRecord(updateData: { id: string; fields: Partial<IFields> }[], typecast?: boolean): Promise<IAirtableRecord<IFields>>;
+	public updateRecord(recordId: string, fields: Partial<IFields>, typecast?: boolean): Promise<IAirtableRecord<IFields>>;
+	public async updateRecord(
+		updateDataOrSingleId: { id: string; fields: Partial<IFields> }[] | string, //TODO: Need to truncate this to 10 records max
+		SingleUpdateFieldData?: Partial<IFields> | boolean, // the boolean won't be used here, but it's needed for the overload signature above
+		typecast = true
+	) {
+		const records =
+			typeof updateDataOrSingleId === 'string'
+				? [{ id: updateDataOrSingleId, fields: SingleUpdateFieldData }] // we have a single record to update
+				: updateDataOrSingleId; // multiple records here
+
+		const { data, status } = await this.doWebRequest<IAirtableRecord<IFields>>({
+			url: this.conjureUrl({}),
+			method: DoRequestAs.Patch,
+			body: JSON.stringify({ records, typecast }),
+			bodyType: 'application/json'
+		});
+		if (status === 200 || status === 204) throw new Error(`Airtable returned code ${status}, with error information: ${data}`);
+		return data;
+	}
+
 	protected async doWebRequest<JsonResultType = Record<string, unknown>>(options: {
 		url: string;
 		method?: DoRequestAs;
@@ -118,6 +140,7 @@ const enum DoRequestAs {
 	Get = 'GET',
 	Post = 'POST',
 	Put = 'PUT',
+	Patch = 'PATCH',
 	Delete = 'DELETE'
 }
 
