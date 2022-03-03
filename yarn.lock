@@ -149,7 +149,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node-fetch@npm:^2.6.1":
+"@types/node-fetch@npm:2.6.1":
   version: 2.6.1
   resolution: "@types/node-fetch@npm:2.6.1"
   dependencies:
@@ -368,17 +368,17 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "airtable-plusplus@workspace:."
   dependencies:
-    "@types/node-fetch": ^2.6.1
+    "@types/node-fetch": 2.6.1
     "@typescript-eslint/eslint-plugin": 5.13.0
     "@typescript-eslint/parser": 5.13.0
     eslint: 8.10.0
     eslint-config-prettier: 8.5.0
     eslint-plugin-prettier: 4.0.0
     node-fetch: ^3.2.1
-    prettier: ^2.5.1
-    standard-version: ^9.3.2
-    tsup: ^5.11.13
-    typescript: ^4.6.2
+    prettier: 2.5.1
+    standard-version: 9.3.2
+    tsup: 5.11.13
+    typescript: 4.6.2
   languageName: unknown
   linkType: soft
 
@@ -3082,7 +3082,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^2.5.1":
+"prettier@npm:2.5.1":
   version: 2.5.1
   resolution: "prettier@npm:2.5.1"
   bin:
@@ -3524,7 +3524,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"standard-version@npm:^9.3.2":
+"standard-version@npm:9.3.2":
   version: 9.3.2
   resolution: "standard-version@npm:9.3.2"
   dependencies:
@@ -3777,7 +3777,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsup@npm:^5.11.13":
+"tsup@npm:5.11.13":
   version: 5.11.13
   resolution: "tsup@npm:5.11.13"
   dependencies:
@@ -3862,7 +3862,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^4.6.2":
+"typescript@npm:4.6.2":
   version: 4.6.2
   resolution: "typescript@npm:4.6.2"
   bin:
@@ -3872,7 +3872,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^4.6.2#~builtin<compat/typescript>":
+"typescript@patch:typescript@4.6.2#~builtin<compat/typescript>":
   version: 4.6.2
   resolution: "typescript@patch:typescript@npm%3A4.6.2#~builtin<compat/typescript>::version=4.6.2&hash=bda367"
   bin:
