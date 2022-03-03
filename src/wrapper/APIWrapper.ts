@@ -13,7 +13,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	}
 
 	public async *getRecordsIterator() {
-		let firstPage = await this.doWebRequest<IListRecordsResponse>({ url: this.conjureUrl({}) });
+		const firstPage = await this.doWebRequest<IListRecordsResponse>({ url: this.conjureUrl({}) });
 
 		// Validate nothing wen't wrong
 		if (typeof firstPage.data === 'undefined') throw new Error(`Did not receive any data from Airtable`);
@@ -64,14 +64,13 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 			body: JSON.stringify({ records, typecast }),
 			bodyType: 'application/json'
 		});
-		if (status === 200 || status === 204) throw new Error(`Airtable returned code ${status}, with error information: ${data}`);
 		return data;
 	}
 
 	public updateRecord(updateData: { id: string; fields: Partial<IFields> }[], typecast?: boolean): Promise<IAirtableRecord<IFields>>;
 	public updateRecord(recordId: string, fields: Partial<IFields>, typecast?: boolean): Promise<IAirtableRecord<IFields>>;
 	public async updateRecord(
-		updateDataOrSingleId: { id: string; fields: Partial<IFields> }[] | string, //TODO: Need to truncate this to 10 records max
+		updateDataOrSingleId: { id: string; fields: Partial<IFields> }[] | string, // TODO: Need to truncate this to 10 records max
 		SingleUpdateFieldData?: Partial<IFields> | boolean, // the boolean won't be used here, but it's needed for the overload signature above
 		typecast = true
 	) {
@@ -80,13 +79,13 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 				? [{ id: updateDataOrSingleId, fields: SingleUpdateFieldData }] // we have a single record to update
 				: updateDataOrSingleId; // multiple records here
 
-		const { data, status } = await this.doWebRequest<IAirtableRecord<IFields>>({
+		const { data } = await this.doWebRequest<IAirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Patch,
 			body: JSON.stringify({ records, typecast }),
 			bodyType: 'application/json'
 		});
-		if (status === 200 || status === 204) throw new Error(`Airtable returned code ${status}, with error information: ${data}`);
+
 		return data;
 	}
 
@@ -101,6 +100,9 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 			method: options.method ?? DoRequestAs.Get
 		});
 		const json = (await req.json()) as JsonResultType;
+
+		if (req.status !== 200) throw new Error(`Airtable returned code ${req.status}, with error information: ${JSON.stringify(json)}}`);
+
 		return { status: req.status, data: json } as ResponseResult<JsonResultType>;
 	}
 
@@ -144,7 +146,10 @@ const enum DoRequestAs {
 	Delete = 'DELETE'
 }
 
-type ResponseResult<JsonType> = { status: number; data: JsonType };
+interface ResponseResult<JsonType> {
+	status: number;
+	data: JsonType;
+}
 
 interface IListRecordsResponse<IFields = Record<string, string | number>> {
 	records: IAirtableRecord<IFields>[];
