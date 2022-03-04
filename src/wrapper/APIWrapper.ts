@@ -130,11 +130,6 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	}
 }
 
-const enum ReturnRequestAs {
-	Text,
-	JSON
-}
-
 const enum DoRequestAs {
 	Get = 'GET',
 	Post = 'POST',
