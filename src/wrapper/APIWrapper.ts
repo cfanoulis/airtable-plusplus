@@ -15,10 +15,6 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	public async *getRecordsIterator() {
 		const firstPage = await this.doWebRequest<IListRecordsResponse>({ url: this.conjureUrl({}) });
 
-		// Validate nothing wen't wrong
-		if (typeof firstPage.data === 'undefined') throw new Error(`Did not receive any data from Airtable`);
-		if (firstPage.status !== 200) throw new Error(`Unexpected status code ${firstPage.status} when getting records`);
-
 		// If, for *some* reason we have no records, stop
 		if (firstPage.data.records.length === 0) return;
 
@@ -58,7 +54,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	public async createRecord(recordData: Partial<IFields> | Partial<IFields>[], typecast = true) {
 		const records = Array.isArray(recordData) ? recordData.map((fields) => ({ fields })) : [{ fields: recordData }];
 
-		const { data, status } = await this.doWebRequest<IAirtableRecord<IFields>>({
+		const { data } = await this.doWebRequest<IAirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Post,
 			body: JSON.stringify({ records, typecast }),
@@ -101,6 +97,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		});
 		const json = (await req.json()) as JsonResultType;
 
+		if (Object.keys(json).length === 0) throw new Error(`Did not receive any data from Airtable`); // JSON has no keys
 		if (req.status !== 200) throw new Error(`Airtable returned code ${req.status}, with error information: ${JSON.stringify(json)}}`);
 
 		return { status: req.status, data: json } as ResponseResult<JsonResultType>;
