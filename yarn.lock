@@ -374,7 +374,7 @@ __metadata:
     eslint: 8.10.0
     eslint-config-prettier: 8.5.0
     eslint-plugin-prettier: 4.0.0
-    node-fetch: ^3.2.1
+    node-fetch: ^3.2.2
     prettier: 2.5.1
     standard-version: 9.3.2
     tsup: 5.12.0
@@ -2732,14 +2732,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-fetch@npm:^3.2.1":
-  version: 3.2.1
-  resolution: "node-fetch@npm:3.2.1"
+"node-fetch@npm:^3.2.2":
+  version: 3.2.2
+  resolution: "node-fetch@npm:3.2.2"
   dependencies:
     data-uri-to-buffer: ^4.0.0
     fetch-blob: ^3.1.4
     formdata-polyfill: ^4.0.10
-  checksum: 2eb19f38c089a8697206210966e8555d7fc452a32da6ee1310552278ce4dda7412bf035d615335c52b0265dff701ac5e0236e9c7a56983b29f30bda15c144c2e
+  checksum: 03920e3ea8ad0122c3bad3dbd1ed005773d3623ed84eebab03c9660d49721ddbc1b2d2f28a006924c258e15a1abc26a976bbfa169fa7e52cd0c7d89f227c2307
   languageName: node
   linkType: hard
 
