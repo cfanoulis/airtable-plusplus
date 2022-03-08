@@ -67,25 +67,53 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	public updateRecord(recordId: string, fields: Partial<IFields>, typecast?: boolean): Promise<IAirtableRecord<IFields>>;
 	public async updateRecord(
 		updateDataOrSingleId: { id: string; fields: Partial<IFields> }[] | string, // TODO: Need to truncate this to 10 records max
-		SingleUpdateFieldData?: Partial<IFields> | boolean, // the boolean won't be used here, but it's needed for the overload signature above
-		typecast = true
+		singleUpdateFieldDataOrTypecast: Partial<IFields> | boolean = true, // the boolean won't be used here, but it's needed for the overload signature above
+		typecast = true // needed for the 3rd overload default
 	) {
 		const records =
 			typeof updateDataOrSingleId === 'string'
-				? [{ id: updateDataOrSingleId, fields: SingleUpdateFieldData }] // we have a single record to update
+				? [{ id: updateDataOrSingleId, fields: singleUpdateFieldDataOrTypecast as Partial<IFields> }] // we have a single record to update
 				: updateDataOrSingleId; // multiple records here
 
 		const { data } = await this.doWebRequest<IAirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Patch,
-			body: JSON.stringify({ records, typecast }),
+			body: JSON.stringify({
+				records,
+				typecast: typeof singleUpdateFieldDataOrTypecast === 'boolean' ? singleUpdateFieldDataOrTypecast : typecast
+			}),
 			bodyType: 'application/json'
 		});
 
 		return data;
 	}
 
-	protected async doWebRequest<JsonResultType = Record<string, unknown>>(options: {
+	public replaceRecord(updateData: { id: string; fields: Partial<IFields> }[], typecast?: boolean): Promise<IAirtableRecord<IFields>>;
+	public replaceRecord(recordId: string, fields: Partial<IFields>, typecast?: boolean): Promise<IAirtableRecord<IFields>>;
+	public async replaceRecord(
+		replaceDataOrSingleId: { id: string; fields: Partial<IFields> }[] | string, // TODO: Need to truncate this to 10 records max
+		singleReplaceFieldDataOrTypecast: Partial<IFields> | boolean = true, // the boolean won't be used here, but it's needed for the overload signature above
+		typecast = true // needed for the 3rd overload default
+	) {
+		const records =
+			typeof replaceDataOrSingleId === 'string'
+				? [{ id: replaceDataOrSingleId, fields: singleReplaceFieldDataOrTypecast as Partial<IFields> }] // we have a single record to update
+				: replaceDataOrSingleId; // multiple records here
+
+		const { data } = await this.doWebRequest<IAirtableRecord<IFields>>({
+			url: this.conjureUrl({}),
+			method: DoRequestAs.Put,
+			body: JSON.stringify({
+				records,
+				typecast: typeof singleReplaceFieldDataOrTypecast === 'boolean' ? singleReplaceFieldDataOrTypecast : typecast
+			}),
+			bodyType: 'application/json'
+		});
+
+		return data;
+	}
+
+	protected async doWebRequest<JsonResultType extends Record<string, any> = Record<string, unknown>>(options: {
 		url: string;
 		method?: DoRequestAs;
 		body?: string;
