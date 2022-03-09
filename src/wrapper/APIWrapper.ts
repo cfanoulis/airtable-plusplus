@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import { AirtableAPIError, AirtableErrorResponse } from './AirtableAPIError.js';
 export class APIWrapper<IFields = Record<string, unknown>> {
 	protected headers: {
 		Authorization: string;
@@ -13,7 +14,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	}
 
 	public async *getRecordsIterator() {
-		const firstPage = await this.doWebRequest<IListRecordsResponse>({ url: this.conjureUrl({}) });
+		const firstPage = await this.doWebRequest<ListRecordsResponse>({ url: this.conjureUrl({}) });
 
 		// If, for *some* reason we have no records, stop
 		if (firstPage.data.records.length === 0) return;
@@ -29,9 +30,9 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 				// if there's no other page, we're done, gtfo
 				if (!lastOffset) break;
 
-				const nextPage = (await this.doWebRequest<IListRecordsResponse>({
+				const nextPage = (await this.doWebRequest<ListRecordsResponse>({
 					url: this.conjureUrl({})
-				})) as ResponseResult<IListRecordsResponse>;
+				})) as ResponseResult<ListRecordsResponse>;
 
 				// Validate nothing wen't wrong
 				if (typeof nextPage.data === 'undefined') throw new Error(`Did not receive any data from Airtable`);
@@ -54,7 +55,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	public async createRecord(recordData: Partial<IFields> | Partial<IFields>[], typecast = true) {
 		const records = Array.isArray(recordData) ? recordData.map((fields) => ({ fields })) : [{ fields: recordData }];
 
-		const { data } = await this.doWebRequest<IAirtableRecord<IFields>>({
+		const { data } = await this.doWebRequest<AirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Post,
 			body: JSON.stringify({ records, typecast }),
@@ -132,7 +133,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		return { status: req.status, data: json } as ResponseResult<JsonResultType>;
 	}
 
-	protected conjureUrl({ fields, filterByFormula, maxRecords, pageSize, sort, view, offset }: IAirtableRequestOptions<IFields>) {
+	protected conjureUrl({ fields, filterByFormula, maxRecords, pageSize, sort, view, offset }: AirtableRequestOptions<IFields>) {
 		const reqUrl = new URL(`https://api.airtable.com/v0/${this.baseId}/${this.tableName}`);
 
 		for (const field of fields ?? []) {
@@ -172,18 +173,20 @@ interface ResponseResult<JsonType> {
 	data: JsonType;
 }
 
-interface IListRecordsResponse<IFields = Record<string, string | number>> {
-	records: IAirtableRecord<IFields>[];
+interface ListRecordsResponse<IFields = Record<string, string | number>> {
+	records: AirtableRecord<IFields>[];
 	offset?: string;
 }
 
-interface IAirtableRecord<IFields> {
+type ModifyRecordsResponse<IFields> = AirtableRecord<IFields> | { records: AirtableRecord<IFields>[] };
+
+interface AirtableRecord<IFields> {
 	id: string;
 	fields: IFields;
 	createdTime: string;
 }
 
-interface IAirtableRequestOptions<IFields> {
+interface AirtableRequestOptions<IFields> {
 	fields?: Array<keyof IFields>;
 	filterByFormula?: string;
 	maxRecords?: number;
