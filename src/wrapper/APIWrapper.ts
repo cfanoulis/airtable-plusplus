@@ -57,6 +57,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		return data;
 	}
 
+	public async createRecord(records: Partial<IFields>[], typecast = true) {
 		const { data } = await this.doWebRequest<AirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Post,
@@ -69,8 +70,8 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	public async modifyRecords(
 		editData: { id: string; fields: Partial<IFields> }[],
 		{ typecast, destructive }: ModifyRecordsOptions = { typecast: true, destructive: false }
-	): Promise<AirtableRecord<IFields>[] | AirtableRecord<IFields>> {
-		const { data } = await this.doWebRequest<AirtableRecord<IFields>[] | AirtableRecord<IFields>>({
+	): Promise<AirtableRecord<IFields>[]> {
+		const { data } = await this.doWebRequest<AirtableRecord<IFields>[]>({
 			url: this.conjureUrl({}),
 			method: destructive ? DoRequestAs.Put : DoRequestAs.Patch,
 			body: JSON.stringify({
@@ -81,6 +82,9 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		});
 
 		// Currently the check does nothing, but this is in place for a. proper types & b. for chunking down the line
+		return data;
+	}
+
 	public async deleteRecords(recordsIds: string[]) {
 		const body = new URLSearchParams(recordsIds.map((id) => ['records[]', id]));
 
@@ -96,7 +100,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	protected async doWebRequest<JsonResultType extends Record<string, any> = Record<string, unknown>>(options: {
 		url: string;
 		method?: DoRequestAs;
-		body?: string;
+		body?: string | URLSearchParams;
 		bodyType?: 'application/json' | 'application/x-www-form-urlencoded';
 	}) {
 		const req = await fetch(options.url, {
@@ -158,7 +162,7 @@ interface ListRecordsResponse<IFields = Record<string, string | number>> {
 
 interface AirtableRecord<IFields> {
 	id: string;
-	fields: IFields;
+	fields: Partial<IFields>;
 	createdTime: string;
 }
 
