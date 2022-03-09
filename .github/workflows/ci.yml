@@ -2,6 +2,7 @@ name: Continuous Integration
 
 on:
   push:
+    - rewrite
   pull_request:
 
 jobs:
