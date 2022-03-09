@@ -87,7 +87,8 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	}) {
 		const req = await fetch(options.url, {
 			headers: { ...this.headers, 'Content-Type': options.bodyType ?? '' },
-			method: options.method ?? DoRequestAs.Get
+			method: options.method ?? DoRequestAs.Get,
+			body: options.body
 		});
 
 		const json = (await req.json()) as JsonResultType | AirtableErrorResponse;
