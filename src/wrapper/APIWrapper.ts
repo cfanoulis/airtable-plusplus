@@ -88,13 +88,15 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		return data;
 	}
 
-	public async deleteRecords(recordsIds: string[]) {
-		const body = new URLSearchParams(recordsIds.map((id) => ['records[]', id]));
+	public async deleteRecords(recordIds: string[]) {
+		const body = recordIds.reduce((acc, curr) => `${acc}records[]=${curr}&`, '?');
+		console.log(body.toString());
 
+		// Dear Airtable...
+		// What
 		const { data } = await this.doWebRequest<{ id: string; deleted: true }[]>({
-			url: this.conjureUrl({}),
+			url: `${this.conjureUrl({})}${body}`,
 			method: DoRequestAs.Delete,
-			body,
 			bodyType: 'application/x-www-form-urlencoded'
 		});
 		return data;
