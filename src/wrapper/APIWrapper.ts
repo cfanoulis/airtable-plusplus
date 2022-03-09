@@ -114,9 +114,9 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 			body: options.body
 		});
 
-		const json = (await req.json()) as JsonResultType | AirtableErrorResponse;
+		const json = (await req.json()) as JsonResultType | { error: AirtableErrorResponse };
 
-		if (req.status !== 200) throw new AirtableAPIError(req.status, json as AirtableErrorResponse);
+		if (req.status !== 200) throw new AirtableAPIError(req.status, json.error as AirtableErrorResponse);
 		return { status: req.status, data: json } as ResponseResult<JsonResultType>;
 	}
 
