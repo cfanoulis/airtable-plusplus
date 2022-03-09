@@ -61,15 +61,15 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		return data;
 	}
 
-	public async updateRecord(
-		updateData: { id: string; fields: Partial<IFields> }[],
+	public async modifyRecords(
+		editData: { id: string; fields: Partial<IFields> }[],
 		{ typecast, destructive }: ModifyRecordsOptions = { typecast: true, destructive: false }
 	): Promise<AirtableRecord<IFields>[] | AirtableRecord<IFields>> {
 		const { data } = await this.doWebRequest<AirtableRecord<IFields>[] | AirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
 			method: destructive ? DoRequestAs.Put : DoRequestAs.Patch,
 			body: JSON.stringify({
-				records: updateData,
+				records: editData,
 				typecast
 			}),
 			bodyType: 'application/json'
