@@ -81,7 +81,16 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		});
 
 		// Currently the check does nothing, but this is in place for a. proper types & b. for chunking down the line
-		return Array.isArray(data) ? (data as AirtableRecord<IFields>[]) : (data as AirtableRecord<IFields>);
+	public async deleteRecords(recordsIds: string[]) {
+		const body = new URLSearchParams(recordsIds.map((id) => ['records[]', id]));
+
+		const { data } = await this.doWebRequest<{ id: string; deleted: true }[]>({
+			url: this.conjureUrl({}),
+			method: DoRequestAs.Delete,
+			body,
+			bodyType: 'application/x-www-form-urlencoded'
+		});
+		return data;
 	}
 
 	protected async doWebRequest<JsonResultType extends Record<string, any> = Record<string, unknown>>(options: {
