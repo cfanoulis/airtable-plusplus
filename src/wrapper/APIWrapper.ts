@@ -61,7 +61,10 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		const { data } = await this.doWebRequest<AirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Post,
-			body: JSON.stringify({ records, typecast }),
+			body: JSON.stringify({
+				records: records.map((fields) => ({ fields })),
+				typecast
+			}),
 			bodyType: 'application/json'
 		});
 		return data;
