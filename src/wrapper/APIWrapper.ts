@@ -35,10 +35,6 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 					url: this.conjureUrl({})
 				})) as ResponseResult<ListRecordsResponse>;
 
-				// Validate nothing wen't wrong
-				if (typeof nextPage.data === 'undefined') throw new Error(`Did not receive any data from Airtable`);
-				if (nextPage.status !== 200) throw new Error(`Unexpected status code ${firstPage.status} when getting records`);
-
 				// if this *is* the last page, then there will be no offset property.
 				lastOffset = nextPage.data.offset ?? false;
 
