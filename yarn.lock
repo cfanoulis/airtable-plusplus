@@ -128,6 +128,38 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@sapphire/async-queue@npm:^1.3.0":
+  version: 1.3.0
+  resolution: "@sapphire/async-queue@npm:1.3.0"
+  checksum: 267a3970ac93aaffc9886582c39ca23a345e8d472042200635044d7e5c48f615d389623de5e6679c4fa335b554357faf872e1e32098b33e5d700099345d29559
+  languageName: node
+  linkType: hard
+
+"@sapphire/ratelimits@npm:^2.4.0":
+  version: 2.4.0
+  resolution: "@sapphire/ratelimits@npm:2.4.0"
+  dependencies:
+    "@sapphire/time-utilities": ^1.7.0
+  checksum: f29ddc21033e48304fc578d293162232aed856f537da5bfe91e0936d488c93fb6d4e4785789a4273ef3c08cf523ae69091e4a0378d9e4192faf093f705421a72
+  languageName: node
+  linkType: hard
+
+"@sapphire/time-utilities@npm:^1.7.0":
+  version: 1.7.0
+  resolution: "@sapphire/time-utilities@npm:1.7.0"
+  dependencies:
+    "@sapphire/utilities": ^3.4.0
+  checksum: af2efcd9489bec41bd8cff8c5b8d567651d13767d2dcdcb421e60d3bda510e1c06c1e2b87d06f15d42ea81690edec7fa6c448fc4926f47d03d7a6cede2e2899a
+  languageName: node
+  linkType: hard
+
+"@sapphire/utilities@npm:^3.4.0":
+  version: 3.4.0
+  resolution: "@sapphire/utilities@npm:3.4.0"
+  checksum: b17a172a9e277da3437a2994cfcefd298a4e9c7cfc9c6dbaa1cc00050ca991446de9bca231da46d62e6d8c0e7e4c2350d32308e0961a2260de9dfd33b965ae42
+  languageName: node
+  linkType: hard
+
 "@tootallnate/once@npm:2":
   version: 2.0.0
   resolution: "@tootallnate/once@npm:2.0.0"
@@ -368,6 +400,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "airtable-plusplus@workspace:."
   dependencies:
+    "@sapphire/async-queue": ^1.3.0
+    "@sapphire/ratelimits": ^2.4.0
+    "@sapphire/utilities": ^3.4.0
     "@types/node-fetch": 2.6.1
     "@typescript-eslint/eslint-plugin": 5.14.0
     "@typescript-eslint/parser": 5.14.0
