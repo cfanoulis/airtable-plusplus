@@ -123,11 +123,10 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 			headers: { ...this.headers, 'Content-Type': options.bodyType ?? '' },
 			method: options.method ?? DoRequestAs.Get
 		});
-		const json = (await req.json()) as JsonResultType;
 
-		if (Object.keys(json).length === 0) throw new Error(`Did not receive any data from Airtable`); // JSON has no keys
-		if (req.status !== 200) throw new Error(`Airtable returned code ${req.status}, with error information: ${JSON.stringify(json)}}`);
+		const json = (await req.json()) as JsonResultType | AirtableErrorResponse;
 
+		if (req.status !== 200) throw new AirtableAPIError(req.status, json as AirtableErrorResponse);
 		return { status: req.status, data: json } as ResponseResult<JsonResultType>;
 	}
 
