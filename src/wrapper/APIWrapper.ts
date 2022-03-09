@@ -63,8 +63,8 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		return data;
 	}
 
-	public updateRecord(updateData: { id: string; fields: Partial<IFields> }[], typecast?: boolean): Promise<IAirtableRecord<IFields>>;
-	public updateRecord(recordId: string, fields: Partial<IFields>, typecast?: boolean): Promise<IAirtableRecord<IFields>>;
+	public updateRecord(updateData: { id: string; fields: Partial<IFields> }[], typecast?: boolean): Promise<AirtableRecord<IFields>[]>;
+	public updateRecord(recordId: string, fields: Partial<IFields>, typecast?: boolean): Promise<AirtableRecord<IFields>>;
 	public async updateRecord(
 		updateDataOrSingleId: { id: string; fields: Partial<IFields> }[] | string, // TODO: Need to truncate this to 10 records max
 		singleUpdateFieldDataOrTypecast: Partial<IFields> | boolean = true, // the boolean won't be used here, but it's needed for the overload signature above
@@ -75,7 +75,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 				? [{ id: updateDataOrSingleId, fields: singleUpdateFieldDataOrTypecast as Partial<IFields> }] // we have a single record to update
 				: updateDataOrSingleId; // multiple records here
 
-		const { data } = await this.doWebRequest<IAirtableRecord<IFields>>({
+		const { data } = await this.doWebRequest<ModifyRecordsResponse<IFields>>({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Patch,
 			body: JSON.stringify({
@@ -85,11 +85,12 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 			bodyType: 'application/json'
 		});
 
-		return data;
+		// Currently the check does nothing, but this is in place for a. proper types & b. for chunking down the line
+		return Array.isArray(data) ? (data as AirtableRecord<IFields>[]) : (data as AirtableRecord<IFields>);
 	}
 
-	public replaceRecord(updateData: { id: string; fields: Partial<IFields> }[], typecast?: boolean): Promise<IAirtableRecord<IFields>>;
-	public replaceRecord(recordId: string, fields: Partial<IFields>, typecast?: boolean): Promise<IAirtableRecord<IFields>>;
+	public replaceRecord(updateData: { id: string; fields: Partial<IFields> }[], typecast?: boolean): Promise<AirtableRecord<IFields>[]>;
+	public replaceRecord(recordId: string, fields: Partial<IFields>, typecast?: boolean): Promise<AirtableRecord<IFields>>;
 	public async replaceRecord(
 		replaceDataOrSingleId: { id: string; fields: Partial<IFields> }[] | string, // TODO: Need to truncate this to 10 records max
 		singleReplaceFieldDataOrTypecast: Partial<IFields> | boolean = true, // the boolean won't be used here, but it's needed for the overload signature above
@@ -100,7 +101,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 				? [{ id: replaceDataOrSingleId, fields: singleReplaceFieldDataOrTypecast as Partial<IFields> }] // we have a single record to update
 				: replaceDataOrSingleId; // multiple records here
 
-		const { data } = await this.doWebRequest<IAirtableRecord<IFields>>({
+		const { data } = await this.doWebRequest<ModifyRecordsResponse<IFields>>({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Put,
 			body: JSON.stringify({
@@ -110,7 +111,8 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 			bodyType: 'application/json'
 		});
 
-		return data;
+		// Currently the check does nothing, but this is in place for a. proper types & b. for chunking down the line
+		return Array.isArray(data) ? (data as AirtableRecord<IFields>[]) : (data as AirtableRecord<IFields>);
 	}
 
 	protected async doWebRequest<JsonResultType extends Record<string, any> = Record<string, unknown>>(options: {
