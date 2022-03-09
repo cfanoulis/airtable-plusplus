@@ -49,8 +49,13 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		}
 	}
 
-	public async createRecord(recordData: Partial<IFields> | Partial<IFields>[], typecast = true) {
-		const records = Array.isArray(recordData) ? recordData.map((fields) => ({ fields })) : [{ fields: recordData }];
+	public async getRecord(id: string) {
+		const { data } = await this.doWebRequest<AirtableRecord<IFields>>({
+			url: `${this.conjureUrl({})}/${id}`,
+			method: DoRequestAs.Get
+		});
+		return data;
+	}
 
 		const { data } = await this.doWebRequest<AirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
