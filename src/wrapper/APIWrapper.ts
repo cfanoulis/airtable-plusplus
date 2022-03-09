@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { AirtableAPIError, AirtableErrorResponse } from './AirtableAPIError.js';
+
 export class APIWrapper<IFields = Record<string, unknown>> {
 	protected headers: {
 		Authorization: string;
@@ -64,50 +65,16 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		return data;
 	}
 
-	public updateRecord(updateData: { id: string; fields: Partial<IFields> }[], typecast?: boolean): Promise<AirtableRecord<IFields>[]>;
-	public updateRecord(recordId: string, fields: Partial<IFields>, typecast?: boolean): Promise<AirtableRecord<IFields>>;
 	public async updateRecord(
-		updateDataOrSingleId: { id: string; fields: Partial<IFields> }[] | string, // TODO: Need to truncate this to 10 records max
-		singleUpdateFieldDataOrTypecast: Partial<IFields> | boolean = true, // the boolean won't be used here, but it's needed for the overload signature above
-		typecast = true // needed for the 3rd overload default
-	) {
-		const records =
-			typeof updateDataOrSingleId === 'string'
-				? [{ id: updateDataOrSingleId, fields: singleUpdateFieldDataOrTypecast as Partial<IFields> }] // we have a single record to update
-				: updateDataOrSingleId; // multiple records here
-
-		const { data } = await this.doWebRequest<ModifyRecordsResponse<IFields>>({
+		updateData: { id: string; fields: Partial<IFields> }[],
+		{ typecast, destructive }: ModifyRecordsOptions = { typecast: true, destructive: false }
+	): Promise<AirtableRecord<IFields>[] | AirtableRecord<IFields>> {
+		const { data } = await this.doWebRequest<AirtableRecord<IFields>[] | AirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
-			method: DoRequestAs.Patch,
+			method: destructive ? DoRequestAs.Put : DoRequestAs.Patch,
 			body: JSON.stringify({
-				records,
-				typecast: typeof singleUpdateFieldDataOrTypecast === 'boolean' ? singleUpdateFieldDataOrTypecast : typecast
-			}),
-			bodyType: 'application/json'
-		});
-
-		// Currently the check does nothing, but this is in place for a. proper types & b. for chunking down the line
-		return Array.isArray(data) ? (data as AirtableRecord<IFields>[]) : (data as AirtableRecord<IFields>);
-	}
-
-	public replaceRecord(updateData: { id: string; fields: Partial<IFields> }[], typecast?: boolean): Promise<AirtableRecord<IFields>[]>;
-	public replaceRecord(recordId: string, fields: Partial<IFields>, typecast?: boolean): Promise<AirtableRecord<IFields>>;
-	public async replaceRecord(
-		replaceDataOrSingleId: { id: string; fields: Partial<IFields> }[] | string, // TODO: Need to truncate this to 10 records max
-		singleReplaceFieldDataOrTypecast: Partial<IFields> | boolean = true, // the boolean won't be used here, but it's needed for the overload signature above
-		typecast = true // needed for the 3rd overload default
-	) {
-		const records =
-			typeof replaceDataOrSingleId === 'string'
-				? [{ id: replaceDataOrSingleId, fields: singleReplaceFieldDataOrTypecast as Partial<IFields> }] // we have a single record to update
-				: replaceDataOrSingleId; // multiple records here
-
-		const { data } = await this.doWebRequest<ModifyRecordsResponse<IFields>>({
-			url: this.conjureUrl({}),
-			method: DoRequestAs.Put,
-			body: JSON.stringify({
-				records,
-				typecast: typeof singleReplaceFieldDataOrTypecast === 'boolean' ? singleReplaceFieldDataOrTypecast : typecast
+				records: updateData,
+				typecast
 			}),
 			bodyType: 'application/json'
 		});
@@ -133,7 +100,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		return { status: req.status, data: json } as ResponseResult<JsonResultType>;
 	}
 
-	protected conjureUrl({ fields, filterByFormula, maxRecords, pageSize, sort, view, offset }: AirtableRequestOptions<IFields>) {
+	protected conjureUrl({ fields, filterByFormula, maxRecords, pageSize, sort, view, offset }: ListRecordsOptions<IFields>) {
 		const reqUrl = new URL(`https://api.airtable.com/v0/${this.baseId}/${this.tableName}`);
 
 		for (const field of fields ?? []) {
@@ -178,15 +145,13 @@ interface ListRecordsResponse<IFields = Record<string, string | number>> {
 	offset?: string;
 }
 
-type ModifyRecordsResponse<IFields> = AirtableRecord<IFields> | { records: AirtableRecord<IFields>[] };
-
 interface AirtableRecord<IFields> {
 	id: string;
 	fields: IFields;
 	createdTime: string;
 }
 
-interface AirtableRequestOptions<IFields> {
+interface ListRecordsOptions<IFields> {
 	fields?: Array<keyof IFields>;
 	filterByFormula?: string;
 	maxRecords?: number;
@@ -194,4 +159,9 @@ interface AirtableRequestOptions<IFields> {
 	sort?: { field: keyof IFields; direction: 'asc' | 'desc' }[];
 	view?: string;
 	offset?: string;
+}
+
+interface ModifyRecordsOptions {
+	typecast: boolean;
+	destructive: boolean;
 }
