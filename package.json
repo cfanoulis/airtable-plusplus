@@ -28,7 +28,7 @@
 	"scripts": {
 		"build:clean": "rimraf dist && yarn build",
 		"build": "tsc -p .",
-		"build:prod": "tsup --clean --format esm --minify --sourcemap --target es2020 --no-splitting --dts src/index.ts src",
+		"build:prod": "tsup",
 		"lint": "eslint src --ext ts",
 		"version:nightly": "standard-version --skip.commit --skip.tag --prerelease \"nightly.$(git rev-parse --verify --short HEAD)\""
 	},
