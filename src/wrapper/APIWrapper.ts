@@ -4,13 +4,18 @@ import { AirtableAPIError, AirtableErrorResponse } from './AirtableAPIError.js';
 export class APIWrapper<IFields = Record<string, unknown>> {
 	protected headers: {
 		Authorization: string;
-		'User-Agent': 'AirtablePlusPlus/v2;';
+		'User-Agent': 'AirtablePlusPlus/v1;';
 	};
 
-	public constructor(public baseId: string, public tableName: string, private apiKey: string) {
+	public constructor(
+		public baseId: string,
+		public tableName: string,
+		private apiKey: string,
+		public endpointUrl: string = 'https://api.airtable.com/v0'
+	) {
 		this.headers = {
 			Authorization: `Bearer ${this.apiKey}`,
-			'User-Agent': 'AirtablePlusPlus/v2;'
+			'User-Agent': 'AirtablePlusPlus/v1;'
 		};
 	}
 
@@ -121,7 +126,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 	}
 
 	protected conjureUrl({ fields, filterByFormula, maxRecords, pageSize, sort, view, offset }: ListRecordsOptions<IFields>) {
-		const reqUrl = new URL(`https://api.airtable.com/v0/${this.baseId}/${this.tableName}`);
+		const reqUrl = new URL(`${this.endpointUrl}/${this.baseId}/${this.tableName}`);
 
 		for (const field of fields ?? []) {
 			const value = typeof field === 'string' ? field : field.toString();
