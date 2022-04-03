@@ -13,11 +13,11 @@
 		// "jsxImportSource": "",                            /* Specify module specifier used to import the JSX factory functions when using `jsx: react-jsx*`.` */
 		// "reactNamespace": "",                             /* Specify the object invoked for `createElement`. This only applies when targeting `react` JSX emit. */
 		// "noLib": true,                                    /* Disable including any library files, including the default lib.d.ts. */
-		"useDefineForClassFields": true /* Emit ECMAScript-standard-compliant class fields. */,
+		"useDefineForClassFields": false /* Emit ECMAScript-standard-compliant class fields. */,
 
 		/* Modules */
-		"module": "ESNext" /* Specify what module code is generated. */,
-		"rootDir": "./src" /* Specify the root folder within your source files. */,
+		"module": "ES2022" /* Specify what module code is generated. */,
+		// "rootDir": "./src" /* Specify the root folder within your source files. */,
 		"moduleResolution": "node" /* Specify how TypeScript looks up a file from a given module specifier. */,
 		// "baseUrl": "./src" /* Specify the base directory to resolve non-relative module names. */,
 		// "paths": {},                                      /* Specify a set of entries that re-map imports to additional lookup locations. */
@@ -39,7 +39,6 @@
 		// "emitDeclarationOnly": true,                      /* Only output d.ts files and not JavaScript files. */
 		"sourceMap": true /* Create source map files for emitted JavaScript files. */,
 		// "outFile": "./",                                  /* Specify a file that bundles all outputs into one JavaScript file. If `declaration` is true, also designates a file that bundles all .d.ts output. */
-		"outDir": "./dist" /* Specify an output folder for all emitted files. */,
 		// "removeComments": true,                           /* Disable emitting comments. */
 		// "noEmit": true,                                   /* Disable emitting files from a compilation. */
 		// "importHelpers": true,                            /* Allow importing helper functions from tslib once per project, instead of including them per-file. */
@@ -88,7 +87,8 @@
 
 		/* Completeness */
 		// "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
-		"skipLibCheck": true /* Skip type checking all .d.ts files. */
+		"skipLibCheck": true /* Skip type checking all .d.ts files. */,
+		"composite": true
 	},
-	"include": ["src"]
+	"references": [{ "path": "./src" }, { "path": "./test/unit" }]
 }

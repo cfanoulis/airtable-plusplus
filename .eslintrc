@@ -2,7 +2,7 @@
 	"root": true,
 	"parser": "@typescript-eslint/parser",
 	"parserOptions": {
-		"extraFileExtensions": [".js"],
+		"extraFileExtensions": [".mjs"],
 		"project": "./tsconfig.lint.json",
 		"sourceType": "module",
 		"ecmaVersion": 2020,
