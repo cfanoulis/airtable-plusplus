@@ -1206,7 +1206,7 @@ __metadata:
     prettier: 2.6.2
     qs: ^6.10.3
     standard-version: 9.3.2
-    tsup: 5.12.4
+    tsup: 5.12.5
     typescript: 4.6.3
   languageName: unknown
   linkType: soft
@@ -6309,9 +6309,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsup@npm:5.12.4":
-  version: 5.12.4
-  resolution: "tsup@npm:5.12.4"
+"tsup@npm:5.12.5":
+  version: 5.12.5
+  resolution: "tsup@npm:5.12.5"
   dependencies:
     bundle-require: ^3.0.2
     cac: ^6.7.12
@@ -6335,7 +6335,7 @@ __metadata:
   bin:
     tsup: dist/cli-default.js
     tsup-node: dist/cli-node.js
-  checksum: 008e4d1252b69668d9378853fc1f58df1a3f66b97b8d22587bf773b28306325f1f24f2888625558784533bdd2af728726ec081aea8555f87ae8ed78fa122e1e4
+  checksum: 5a456068cb3516097d6217d60a56cdd3c40d22920b45ab6775956586bf7c998cd53622873acdc0f764e1366f2ddb3cdf465b2c2302b77225e8ad678ec549374c
   languageName: node
   linkType: hard
 
