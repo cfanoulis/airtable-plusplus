@@ -26,7 +26,7 @@
 		"fastify": "3.29.0",
 		"jest": "^27.5.1",
 		"prettier": "2.6.2",
-		"standard-version": "9.3.2",
+		"standard-version": "9.5.0",
 		"tsup": "5.12.7",
 		"typescript": "4.6.4"
 	},
