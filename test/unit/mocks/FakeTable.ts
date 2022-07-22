@@ -8,6 +8,7 @@ import Fastify from 'fastify';
 import QueryString, { type ParsedQs } from 'qs';
 import { APIWrapper } from '../../../src/index.js';
 
+const state = new Map<'last request' | 'handler override', any>();
 const fastify = Fastify({
 	logger: false,
 	querystringParser: (str) => QueryString.parse(str)
@@ -15,10 +16,15 @@ const fastify = Fastify({
 
 const FAKE_CREATED_TIME = '2020-04-20T16:20:00.000Z';
 
-// fastify.use(function (req, reply, next) {
-// 	req.fastify.set('most recent request', req);
-// 	next();
-// });
+fastify.addHook('preHandler', (request, _reply, done) => {
+	state.set('last request', request);
+	done();
+});
+
+fastify.addHook('preHandler', (request, reply, done) => {
+	if (state.has('handler override')) return state.get('handler override')(request, reply);
+	done();
+});
 
 fastify.post<{ Body: Record<string, any> }>('/v0/:baseId/:tableIdOrName', (req) => {
 	const isCreatingJustOneRecord = Boolean(req.body.fields);
@@ -105,8 +111,12 @@ const getMockServer = async () => {
 	await fastify.listen({ port: 55443 });
 	return {
 		apiWrapper: new APIWrapper('base123', 'table123', 'apikeyer', 'http://localhost:55443'),
-		teardownAsync: fastify.close.bind(fastify),
-		testServer: fastify
+		teardownAsync: async () => {
+			await fastify.close();
+			state.clear();
+		},
+		testServer: fastify,
+		state
 	};
 };
 
