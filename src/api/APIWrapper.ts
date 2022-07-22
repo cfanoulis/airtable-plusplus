@@ -25,7 +25,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		// If, for *some* reason we have no records, stop
 		if (firstPage.data.records.length === 0) return;
 
-		let lastOffset = firstPage.data.offset ?? false;
+		let lastOffset = firstPage.data.offset ?? (false as const);
 		// records are always an array, so this will have no problem
 		let recordsIter = firstPage.data.records[Symbol.iterator]();
 
@@ -62,7 +62,7 @@ export class APIWrapper<IFields = Record<string, unknown>> {
 		return data;
 	}
 
-	public async createRecord(records: Partial<IFields>[], typecast = true) {
+	public async createRecords(records: Partial<IFields>[], typecast = true) {
 		const { data } = await this.doWebRequest<AirtableRecord<IFields>>({
 			url: this.conjureUrl({}),
 			method: DoRequestAs.Post,
