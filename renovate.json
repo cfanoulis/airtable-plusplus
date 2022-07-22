@@ -9,7 +9,7 @@
 		{
 			"matchDepTypes": ["devDependencies"],
 			"matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-			"automerge": true
+			"groupName": "development-dependencies"
 		}
 	],
 	"dependencyDashboard": true,
@@ -18,6 +18,6 @@
 	"schedule": ["after 14:30 every weekday", "every weekend"],
 	"lockFileMaintenance": {
 		"enabled": true,
-		"automerge": true
+		"automerge": false
 	}
 }
