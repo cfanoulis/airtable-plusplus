@@ -20,8 +20,7 @@ const FAKE_CREATED_TIME = '2020-04-20T16:20:00.000Z';
 // 	next();
 // });
 
-// eslint-disable-next-line @typescript-eslint/require-await
-fastify.post<{ Body: Record<string, any> }>('/v0/:baseId/:tableIdOrName', async (req) => {
+fastify.post<{ Body: Record<string, any> }>('/v0/:baseId/:tableIdOrName', (req) => {
 	const isCreatingJustOneRecord = Boolean(req.body.fields);
 	const recordsInBody: any[] = isCreatingJustOneRecord ? [req.body] : req.body.records;
 
@@ -37,18 +36,7 @@ fastify.post<{ Body: Record<string, any> }>('/v0/:baseId/:tableIdOrName', async 
 	return isCreatingJustOneRecord ? records[0] : { records };
 });
 
-// eslint-disable-next-line @typescript-eslint/require-await
-fastify.patch<{ Body: Record<string, any>; Params: Record<string, string> }>('/v0/:baseId/:tableIdOrName/:recordId', async (req) => {
-	const fields = req.body.typecast ? { typecasted: true } : req.body.fields;
-
-	return {
-		id: req.params.recordId,
-		createdTime: FAKE_CREATED_TIME,
-		fields
-	};
-});
-// eslint-disable-next-line @typescript-eslint/require-await
-fastify.put<{ Body: Record<string, any>; Params: Record<string, string> }>('/v0/:baseId/:tableIdOrName/:recordId', async (req) => {
+fastify.put<{ Body: Record<string, any>; Params: Record<string, string> }>('/v0/:baseId/:tableIdOrName/:recordId', (req) => {
 	const fields = req.body.typecast ? { typecasted: true } : req.body.fields;
 
 	return {
@@ -58,8 +46,7 @@ fastify.put<{ Body: Record<string, any>; Params: Record<string, string> }>('/v0/
 	};
 });
 
-// eslint-disable-next-line @typescript-eslint/require-await
-fastify.patch<{ Body: Record<string, any> }>('/v0/:baseId/:tableIdOrName', async (req) => {
+fastify.patch<{ Body: Record<string, any> }>('/v0/:baseId/:tableIdOrName', (req) => {
 	return {
 		records: req.body.records.map((record: { id: string; fields: string }) => {
 			const fields = req.body.typecast ? { typecasted: true } : record.fields;
@@ -72,8 +59,7 @@ fastify.patch<{ Body: Record<string, any> }>('/v0/:baseId/:tableIdOrName', async
 	};
 });
 
-// eslint-disable-next-line @typescript-eslint/require-await
-fastify.put<{ Body: Record<string, any> }>('/v0/:baseId/:tableIdOrName', async (req) => {
+fastify.put<{ Body: Record<string, any> }>('/v0/:baseId/:tableIdOrName', (req) => {
 	return {
 		records: req.body.records.map((record: { id: string; fields: string }) => {
 			const fields = req.body.typecast ? { typecasted: true } : record.fields;
@@ -86,10 +72,8 @@ fastify.put<{ Body: Record<string, any> }>('/v0/:baseId/:tableIdOrName', async (
 	};
 });
 
-// eslint-disable-next-line @typescript-eslint/require-await
-fastify.delete<{ Body: Record<string, any>; Querystring: ParsedQs }>('/v0/:baseId/:tableIdOrName', async (req) => {
-	// eslint-disable-next-line @typescript-eslint/no-throw-literal
-	if (!req.query.records || !Array.isArray(req.query.records)) throw `No IDs were sent for delete`;
+fastify.delete<{ Body: Record<string, any>; Querystring: ParsedQs }>('/v0/:baseId/:tableIdOrName', (req) => {
+	if (!req.query.records || !Array.isArray(req.query.records)) throw new Error('No IDs were sent for delete');
 	return {
 		records: (req.query['records[]'] as string[]).map((recordId: string) => {
 			return {
@@ -118,7 +102,7 @@ fastify.addHook('onError', async (request, reply, error) => {
 });
 
 const getMockServer = async () => {
-	await fastify.listen(55443);
+	await fastify.listen({ port: 55443 });
 	return {
 		apiWrapper: new APIWrapper('base123', 'table123', 'apikeyer', 'http://localhost:55443'),
 		teardownAsync: fastify.close.bind(fastify),
