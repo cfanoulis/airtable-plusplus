@@ -1,3 +1,5 @@
+_please note! the developer of this package is [on hiatus](https://fanoulis.dev). Therefore, no support will be provided for this package_
+
 # Airtable++
 
 A less complicated, TypeScript fork of `airtable-plus`, the Airtable Node library designed for async/await.
