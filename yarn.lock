@@ -959,20 +959,9 @@ __metadata:
   linkType: hard
 
 "@sapphire/ratelimits@npm:^2.4.4":
-  version: 2.4.4
-  resolution: "@sapphire/ratelimits@npm:2.4.4"
-  dependencies:
-    "@sapphire/time-utilities": ^1.7.4
-  checksum: 8bb31173f2fd61ca64b4f34ff3a927de00e339ee8d4dad7b8d80fa10e9020889033fc1f3ec0560256f54b8aedf3d2973378fe24d87f6aa1ca98be936eea35fcb
-  languageName: node
-  linkType: hard
-
-"@sapphire/time-utilities@npm:^1.7.4":
-  version: 1.7.5
-  resolution: "@sapphire/time-utilities@npm:1.7.5"
-  dependencies:
-    "@sapphire/utilities": ^3.7.0
-  checksum: a83f505ff0e5eac7b8b316c7fa207f52ae2c07dd223f651d7dcb3f9a3e61b86b6168dac746455d1d1a2a4732d4865ab7526332f3f463db31048d8b1e5ba9d6cb
+  version: 2.4.9
+  resolution: "@sapphire/ratelimits@npm:2.4.9"
+  checksum: a18ed95530804ae6d95de3f73679e34fdd369c1f497570f98f85e40f6b567196972555a33c959f309cb86ee5b429d17426a11376d329bbf14e9539676db60c9e
   languageName: node
   linkType: hard
 
